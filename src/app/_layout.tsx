@@ -17,7 +17,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -25,6 +25,18 @@ import { useStore } from '@/store/useStore';
 import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+function useStoreHydrated() {
+  const [hydrated, setHydrated] = useState(() => useStore.persist.hasHydrated());
+  useEffect(() => {
+    if (useStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return useStore.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+  return hydrated;
+}
 
 function ThemedShell() {
   const { colors, dark } = useTheme();
@@ -53,7 +65,7 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });
-  const hydrated = useStore((s) => s._hydrated);
+  const hydrated = useStoreHydrated();
   const ready = fontsLoaded && hydrated;
 
   useEffect(() => {

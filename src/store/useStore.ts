@@ -86,8 +86,6 @@ export interface AppState {
   timer: TimerState;
   // preferences
   settings: Settings;
-  // hydration flag
-  _hydrated: boolean;
 
   // ── Gyms ───────────────────────────────────────────────
   addGym: (data: Omit<Gym, 'id'>) => void;
@@ -136,7 +134,6 @@ export const useStore = create<AppState>()(
       tableFormats: SEED_TABLE_FORMATS,
       timer: { seconds: 0, running: false },
       settings: DEFAULT_SETTINGS,
-      _hydrated: false,
 
       addGym: (data) =>
         set((s) => ({
@@ -290,9 +287,6 @@ export const useStore = create<AppState>()(
         tableFormats: s.tableFormats,
         settings: s.settings,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) state._hydrated = true;
-      },
     },
   ),
 );

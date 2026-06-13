@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "expo-web",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": [
+        "-d",
+        "ubuntu",
+        "--",
+        "bash",
+        "-lc",
+        "cd /home/shinjiaki/dev/tt-trainer && source ~/.nvm/nvm.sh && npx expo start --web --port 8088"
+      ],
+      "port": 8088
+    }
+  ]
+}
