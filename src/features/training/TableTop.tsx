@@ -36,6 +36,7 @@ export function TableTop({
   const { colors, fonts } = useTheme();
   const minHeight = listMode ? 96 : 116;
   const hovering = dragOverSide !== null;
+  const doubles = format === 'doubles';
 
   return (
     <View
@@ -80,18 +81,19 @@ export function TableTop({
           ref={(node) => registerZone(`${table.id}:coach`, node)}
           onPress={() => onPressSide(table, 'coach')}
           style={{
-            width: '34%',
+            // doubles → split the table exactly in half; training → narrow coach side.
+            ...(doubles ? { flex: 1 } : { width: '34%' }),
             alignItems: 'center',
             justifyContent: 'center',
             paddingVertical: 8,
-            paddingHorizontal: 4,
+            paddingHorizontal: doubles ? 10 : 4,
             backgroundColor: dragOverSide === 'coach' ? colors.accentSoft : 'transparent',
           }}
         >
           {coach.length === 0 ? (
-            <CoachPlaceholder hint={dragOverSide === 'coach'} />
+            <SidePlaceholder hint={dragOverSide === 'coach'} label={doubles ? 'Lado 1' : 'Treinador'} icon={doubles ? 'plus' : 'whistle'} />
           ) : (
-            <SeatList players={coach} coachRole />
+            <SeatList players={coach} coachRole={!doubles} />
           )}
         </Pressable>
 
@@ -114,7 +116,7 @@ export function TableTop({
           }}
         >
           {players.length === 0 ? (
-            <EmptyPlayers hint={dragOverSide === 'players'} />
+            <EmptyPlayers hint={dragOverSide === 'players'} label={doubles ? 'Lado 2' : 'Adicionar'} />
           ) : (
             <SeatList players={players} />
           )}
@@ -164,8 +166,10 @@ function SeatList({ players, coachRole }: { players: Player[]; coachRole?: boole
   );
 }
 
-function CoachPlaceholder({ hint }: { hint: boolean }) {
+/** Coach-side empty slot. Solid circle + whistle for "training"; dashed + plus for "doubles". */
+function SidePlaceholder({ hint, label, icon }: { hint: boolean; label: string; icon: 'whistle' | 'plus' }) {
   const { colors, fonts } = useTheme();
+  const solid = icon === 'whistle';
   return (
     <View style={{ alignItems: 'center', gap: 5 }}>
       <View
@@ -173,23 +177,24 @@ function CoachPlaceholder({ hint }: { hint: boolean }) {
           width: 34,
           height: 34,
           borderRadius: 17,
-          backgroundColor: colors.surface,
+          backgroundColor: solid ? colors.surface : 'transparent',
           borderWidth: 1.5,
+          borderStyle: solid ? 'solid' : 'dashed',
           borderColor: colors.borderStrong,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name="whistle" size={19} color={colors.text} />
+        <Icon name={icon} size={solid ? 19 : 16} color={solid ? colors.text : colors.textFaint} />
       </View>
       <Text style={{ fontFamily: fonts.ui600, fontSize: 10.5, color: colors.textMuted }}>
-        {hint ? 'Soltar aqui' : 'Treinador'}
+        {hint ? 'Soltar aqui' : label}
       </Text>
     </View>
   );
 }
 
-function EmptyPlayers({ hint }: { hint: boolean }) {
+function EmptyPlayers({ hint, label }: { hint: boolean; label: string }) {
   const { colors, fonts } = useTheme();
   return (
     <View style={{ alignItems: 'center', gap: 4 }}>
@@ -208,7 +213,7 @@ function EmptyPlayers({ hint }: { hint: boolean }) {
         <Icon name="plus" size={16} color={colors.textFaint} />
       </View>
       <Text style={{ fontFamily: fonts.ui500, fontSize: 10, color: colors.textFaint, textAlign: 'center' }}>
-        {hint ? 'Soltar aqui' : 'Adicionar'}
+        {hint ? 'Soltar aqui' : label}
       </Text>
     </View>
   );

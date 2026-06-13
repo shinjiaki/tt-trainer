@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, BottomSheet, IconButton, LevelBadge, SegmentedControl } from '@/components';
+import { Avatar, BottomSheet, IconButton, LevelBadge, SegmentedControl, TextField } from '@/components';
 import { Icon } from '@/icons';
 import type { Player, TableFormat, TableModel, TableSide } from '@/models/types';
 import { coachCapacity, playerCapacity } from '@/store/useStore';
@@ -16,6 +17,7 @@ interface ManageTableSheetProps {
   onSetFormat: (format: TableFormat) => void;
   onRemove: (playerId: string) => void;
   onAdd: (playerId: string, side: TableSide) => void;
+  onRename: (label: string) => void;
 }
 
 export function ManageTableSheet({
@@ -28,15 +30,37 @@ export function ManageTableSheet({
   onSetFormat,
   onRemove,
   onAdd,
+  onRename,
 }: ManageTableSheetProps) {
   const { colors, fonts } = useTheme();
+  const doubles = format === 'doubles';
+
+  // Local draft for the table name; committed on blur so clearing the field mid-typing
+  // doesn't immediately fall back to the old label.
+  const [nameDraft, setNameDraft] = useState('');
+  useEffect(() => {
+    if (table) setNameDraft(table.label);
+  }, [table?.id]);
+
+  const handleClose = () => {
+    if (table && nameDraft.trim() && nameDraft.trim() !== table.label) onRename(nameDraft);
+    onClose();
+  };
 
   const coachFull = coach.length >= coachCapacity(format);
   const playersFull = players.length >= playerCapacity(format);
 
   return (
-    <BottomSheet open={table !== null} onClose={onClose} title={table?.label ?? ''}>
+    <BottomSheet open={table !== null} onClose={handleClose} title={table?.label ?? ''}>
       <View style={{ gap: 16 }}>
+        {/* name */}
+        <TextField
+          label="Nome da mesa"
+          value={nameDraft}
+          onChangeText={setNameDraft}
+          placeholder="Mesa"
+        />
+
         {/* format */}
         <View>
           <SubLabel>Formato</SubLabel>
@@ -53,11 +77,11 @@ export function ManageTableSheet({
         {/* coach side */}
         <View>
           <SubLabel>
-            Lado treinador · {coach.length}
-            {format === 'doubles' ? '/2' : '/1'}
+            {doubles ? 'Lado 1' : 'Lado treinador'} · {coach.length}
+            {doubles ? '/2' : '/1'}
           </SubLabel>
           {coach.length === 0 ? (
-            <Empty>Sem treinador definido. Adicione do banco abaixo.</Empty>
+            <Empty>{doubles ? 'Vazio. Adicione do banco abaixo.' : 'Sem treinador definido. Adicione do banco abaixo.'}</Empty>
           ) : (
             <View style={{ gap: 8 }}>
               {coach.map((p) => (
@@ -70,8 +94,8 @@ export function ManageTableSheet({
         {/* players side */}
         <View>
           <SubLabel>
-            Na mesa · {players.length}
-            {format === 'doubles' ? '/2' : ''}
+            {doubles ? 'Lado 2' : 'Na mesa'} · {players.length}
+            {doubles ? '/2' : ''}
           </SubLabel>
           {players.length === 0 ? (
             <Empty>Nenhum jogador ainda. Adicione abaixo.</Empty>
@@ -111,14 +135,14 @@ export function ManageTableSheet({
                     <LevelBadge level={p.level} small />
                   </View>
                   <AddButton
-                    icon="whistle"
-                    label="Treinador"
+                    icon={doubles ? 'plus' : 'whistle'}
+                    label={doubles ? 'Lado 1' : 'Treinador'}
                     disabled={coachFull}
                     onPress={() => onAdd(p.id, 'coach')}
                   />
                   <AddButton
                     icon="plus"
-                    label="Mesa"
+                    label={doubles ? 'Lado 2' : 'Mesa'}
                     disabled={playersFull}
                     onPress={() => onAdd(p.id, 'players')}
                   />

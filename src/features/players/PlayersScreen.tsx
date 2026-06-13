@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { Avatar, Button, LevelBadge, Screen } from '@/components';
 import { Icon } from '@/icons';
@@ -18,11 +18,17 @@ export function PlayersScreen() {
   const deletePlayer = useStore((s) => s.deletePlayer);
 
   const [query, setQuery] = useState('');
+  const [gymFilter, setGymFilter] = useState<string | null>(null);
   const [editing, setEditing] = useState<Player | 'new' | null>(null);
 
   const filtered = useMemo(
-    () => players.filter((p) => p.name.toLowerCase().includes(query.toLowerCase())),
-    [players, query],
+    () =>
+      players.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) &&
+          (gymFilter === null || p.gymIds.includes(gymFilter)),
+      ),
+    [players, query, gymFilter],
   );
 
   return (
@@ -61,7 +67,7 @@ export function PlayersScreen() {
           borderRadius: 13,
           paddingHorizontal: 14,
           paddingVertical: 10,
-          marginBottom: 16,
+          marginBottom: 12,
         }}
       >
         <Icon name="search" size={18} color={colors.textFaint} />
@@ -73,6 +79,31 @@ export function PlayersScreen() {
           style={{ flex: 1, fontFamily: fonts.ui400, fontSize: 15, color: colors.text, padding: 0 }}
         />
       </View>
+
+      {/* gym filter */}
+      {gyms.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingBottom: 2 }}
+          style={{ marginBottom: 16, marginHorizontal: -2 }}
+        >
+          <GymChip
+            label="Todos"
+            active={gymFilter === null}
+            onPress={() => setGymFilter(null)}
+          />
+          {gyms.map((g) => (
+            <GymChip
+              key={g.id}
+              label={g.name}
+              color={g.color}
+              active={gymFilter === g.id}
+              onPress={() => setGymFilter((cur) => (cur === g.id ? null : g.id))}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       {/* list */}
       <View style={{ gap: 9 }}>
@@ -162,5 +193,44 @@ export function PlayersScreen() {
         }}
       />
     </Screen>
+  );
+}
+
+function GymChip({
+  label,
+  color,
+  active,
+  onPress,
+}: {
+  label: string;
+  color?: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const { colors, fonts } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        backgroundColor: active ? colors.primary : colors.surfaceMuted,
+        borderWidth: 1,
+        borderColor: active ? colors.primary : colors.border,
+        borderRadius: 999,
+        paddingVertical: 7,
+        paddingHorizontal: 13,
+      }}
+    >
+      {color && (
+        <View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: color }} />
+      )}
+      <Text
+        style={{ fontFamily: fonts.ui600, fontSize: 13, color: active ? '#fff' : colors.textMuted }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }

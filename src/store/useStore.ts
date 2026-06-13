@@ -97,6 +97,8 @@ export interface AppState {
   addCourt: (input: { gymId: string; name: string; cols: number; tableCount: number }) => void;
   updateCourt: (id: string, input: { name: string; cols: number; tableCount: number }) => void;
   deleteCourt: (id: string) => void;
+  /** Rename a single table (e.g. "Mesa 1" → "Central"). */
+  renameTable: (tableId: string, label: string) => void;
   setActiveCourtId: (id: string) => void;
   setSelectedGymId: (id: string) => void;
 
@@ -207,6 +209,20 @@ export const useStore = create<AppState>()(
             activeCourtId: activeStillExists ? s.activeCourtId : (courts[0]?.id ?? null),
           };
         }),
+
+      renameTable: (tableId, label) =>
+        set((s) => ({
+          courts: s.courts.map((c) =>
+            c.tables.some((t) => t.id === tableId)
+              ? {
+                  ...c,
+                  tables: c.tables.map((t) =>
+                    t.id === tableId ? { ...t, label: label.trim() || t.label } : t,
+                  ),
+                }
+              : c,
+          ),
+        })),
 
       setActiveCourtId: (id) => set({ activeCourtId: id }),
       setSelectedGymId: (id) => set({ selectedGymId: id }),

@@ -45,6 +45,7 @@ export function TrainingScreen() {
   const placePlayer = useStore((s) => s.placePlayer);
   const removePlayer = useStore((s) => s.removePlayer);
   const setTableFormat = useStore((s) => s.setTableFormat);
+  const renameTable = useStore((s) => s.renameTable);
 
   const court = courts.find((c) => c.id === activeCourtId) ?? null;
   const gym = gyms.find((g) => g.id === court?.gymId) ?? null;
@@ -133,12 +134,17 @@ export function TrainingScreen() {
   const ghostX = useSharedValue(0);
   const ghostY = useSharedValue(0);
   const ghostStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: ghostX.value - 23 }, { translateY: ghostY.value - 23 }],
+    // Lift the avatar above the fingertip so the dragged name isn't hidden by the finger.
+    transform: [{ translateX: ghostX.value - 23 }, { translateY: ghostY.value - 66 }],
   }));
   const ghostPlayer = draggingId ? byId.get(draggingId) : null;
 
   const cols = layout === 'list' ? 1 : (court?.cols ?? 2);
   const selectedPlayer = selBench ? byId.get(selBench) : null;
+  // Use the live table from the store so a rename reflects immediately in the open sheet.
+  const liveSheetTable = sheetTable
+    ? (court?.tables.find((t) => t.id === sheetTable.id) ?? sheetTable)
+    : null;
 
   if (!court) {
     return (
@@ -276,7 +282,7 @@ export function TrainingScreen() {
 
       {/* manage table sheet */}
       <ManageTableSheet
-        table={sheetTable}
+        table={liveSheetTable}
         format={sheetTable ? (tableFormats[sheetTable.id] ?? 'training') : 'training'}
         coach={sheetTable ? resolve((assignments[sheetTable.id] ?? { coach: [] }).coach ?? []) : []}
         players={sheetTable ? resolve((assignments[sheetTable.id] ?? { players: [] }).players ?? []) : []}
@@ -285,6 +291,7 @@ export function TrainingScreen() {
         onSetFormat={(format) => sheetTable && setTableFormat(sheetTable.id, format)}
         onRemove={(playerId) => removePlayer(playerId)}
         onAdd={(playerId, side) => sheetTable && placePlayer(playerId, sheetTable.id, side)}
+        onRename={(label) => sheetTable && renameTable(sheetTable.id, label)}
       />
     </View>
   );
