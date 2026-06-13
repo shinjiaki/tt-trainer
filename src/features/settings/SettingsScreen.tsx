@@ -23,12 +23,16 @@ const THEME_OPTIONS: { key: ThemeName; label: string }[] = [
   { key: 'verde', label: 'Verde' },
 ];
 
+/** Keep in sync with app.json → expo.version. */
+const APP_VERSION = '1.0.0';
+
 export function SettingsScreen() {
   const { colors, fonts } = useTheme();
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
 
   const [editingProfile, setEditingProfile] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(settings.trainerName);
 
   return (
@@ -219,7 +223,8 @@ export function SettingsScreen() {
           <Row
             icon="info"
             title="Sobre o app"
-            sub="Versão 1.0.0"
+            sub={`Versão ${APP_VERSION}`}
+            onPress={() => setAboutOpen(true)}
             right={<Icon name="chevron" size={18} color={colors.textFaint} />}
           />
         </Group>
@@ -244,6 +249,105 @@ export function SettingsScreen() {
           >
             Salvar perfil
           </Button>
+        </View>
+      </BottomSheet>
+
+      <BottomSheet open={aboutOpen} onClose={() => setAboutOpen(false)} title="Sobre o app">
+        <View style={{ gap: 22, paddingTop: 4 }}>
+          {/* app identity */}
+          <View style={{ alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 20,
+                backgroundColor: colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="paddle" size={38} color="#fff" />
+            </View>
+            <View style={{ alignItems: 'center', gap: 3 }}>
+              <Text style={{ fontFamily: fonts.display700, fontSize: 22, color: colors.text }}>
+                TT Trainer
+              </Text>
+              <View
+                style={{
+                  backgroundColor: colors.surfaceMuted,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 999,
+                  paddingVertical: 3,
+                  paddingHorizontal: 11,
+                }}
+              >
+                <Text style={{ fontFamily: fonts.mono700, fontSize: 12, color: colors.textMuted }}>
+                  v{APP_VERSION}
+                </Text>
+              </View>
+            </View>
+            <Text
+              style={{
+                fontFamily: fonts.ui400,
+                fontSize: 13,
+                color: colors.textMuted,
+                textAlign: 'center',
+                paddingHorizontal: 12,
+              }}
+            >
+              Organize treinos de tênis de mesa: ginásios, quadras, jogadores e mesas.
+            </Text>
+          </View>
+
+          {/* developer credit */}
+          <View>
+            <SectionLabel>Desenvolvido por</SectionLabel>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 13,
+                backgroundColor: colors.surfaceMuted,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 16,
+                padding: 14,
+              }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 14,
+                  backgroundColor: colors.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontFamily: fonts.display700, fontSize: 17, color: '#fff' }}>SD</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.display600, fontSize: 16, color: colors.text }}>
+                  shin.dev
+                </Text>
+                <Text style={{ fontFamily: fonts.ui400, fontSize: 12.5, color: colors.textMuted }}>
+                  Design & desenvolvimento
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <Text
+            style={{
+              textAlign: 'center',
+              fontFamily: fonts.ui400,
+              fontSize: 11.5,
+              color: colors.textFaint,
+            }}
+          >
+            © 2026 shin.dev · Todos os direitos reservados
+          </Text>
         </View>
       </BottomSheet>
     </Screen>
@@ -278,15 +382,19 @@ function Row({
   title,
   sub,
   right,
+  onPress,
 }: {
   icon: IconName;
   title: string;
   sub?: string;
   right?: ReactNode;
+  onPress?: () => void;
 }) {
   const { colors, fonts } = useTheme();
+  const Container = onPress ? Pressable : View;
   return (
-    <View
+    <Container
+      onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 13 }}
     >
       <View
@@ -308,6 +416,6 @@ function Row({
         )}
       </View>
       {right}
-    </View>
+    </Container>
   );
 }
