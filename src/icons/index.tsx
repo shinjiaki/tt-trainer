@@ -19,6 +19,7 @@ import {
   Play,
   Plus,
   RotateCcw,
+  School,
   Search,
   Settings,
   Timer,
@@ -76,6 +77,7 @@ export type IconName =
   | 'plus'
   | 'whistle'
   | 'timer'
+  | 'gym'
   | 'play'
   | 'pause'
   | 'reset'
@@ -116,6 +118,7 @@ export const Icons: Record<IconName, ComponentType<IconProps>> = {
   bell: Bell,
   info: Info,
   dot: Circle,
+  gym: School,
 };
 
 export function Icon({

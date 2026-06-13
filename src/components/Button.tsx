@@ -3,7 +3,7 @@ import { Pressable, type StyleProp, Text, View, type ViewStyle } from 'react-nat
 import { Icon, type IconName } from '@/icons';
 import { useTheme } from '@/theme';
 
-type Variant = 'primary' | 'accent' | 'soft' | 'ghost';
+type Variant = 'primary' | 'accent' | 'soft' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -33,6 +33,7 @@ export function Button({
     accent: { bg: colors.accent, fg: colors.onAccent, border: 'transparent' },
     soft: { bg: colors.primarySoft, fg: colors.primary, border: 'transparent' },
     ghost: { bg: 'transparent', fg: colors.text, border: colors.border },
+    danger: { bg: colors.danger, fg: '#ffffff', border: 'transparent' },
   };
   const v = variants[variant];
   const padV = size === 'lg' ? 15 : size === 'sm' ? 8 : 12;

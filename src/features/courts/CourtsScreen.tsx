@@ -62,7 +62,9 @@ export function CourtsScreen() {
             onSelect={setSelectedGymId}
             onManageGyms={() => router.navigate('/gyms')}
           />
-          <Text style={{ fontFamily: fonts.ui400, fontSize: 13, color: colors.textMuted, marginTop: 3 }}>
+          <Text
+            style={{ fontFamily: fonts.ui400, fontSize: 13, color: colors.textMuted, marginTop: 3 }}
+          >
             {visible.length} {visible.length === 1 ? 'quadra' : 'quadras'} neste ginásio
           </Text>
         </View>
@@ -86,10 +88,22 @@ export function CourtsScreen() {
               gap: 12,
             }}
           >
-            <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
+            <Text
+              style={{
+                fontFamily: fonts.ui400,
+                fontSize: 14,
+                color: colors.textMuted,
+                textAlign: 'center',
+              }}
+            >
               Nenhuma quadra em {selectedGym?.name ?? 'este ginásio'} ainda.
             </Text>
-            <Button icon="plus" size="sm" onPress={() => setEditing('new')}>
+            <Button
+              icon="plus"
+              size="sm"
+              onPress={() => setEditing('new')}
+              style={{ alignSelf: 'center' }}
+            >
               Cadastrar quadra
             </Button>
           </View>
@@ -121,8 +135,12 @@ export function CourtsScreen() {
                   <CourtPreview cols={c.cols} count={c.tables.length} small />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <Text style={{ fontFamily: fonts.display700, fontSize: 18, color: colors.text }}>
+                  <View
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+                  >
+                    <Text
+                      style={{ fontFamily: fonts.display700, fontSize: 18, color: colors.text }}
+                    >
                       {c.name}
                     </Text>
                     {active && (
@@ -148,12 +166,23 @@ export function CourtsScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={{ fontFamily: fonts.ui400, fontSize: 13, color: colors.textMuted, marginTop: 3 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.ui400,
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      marginTop: 3,
+                    }}
+                  >
                     {c.tables.length} mesas · {c.cols} {c.cols > 1 ? 'colunas' : 'coluna'}
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                     {active ? (
-                      <Button icon="play" size="sm" onPress={() => router.navigate('/(tabs)/training')}>
+                      <Button
+                        icon="play"
+                        size="sm"
+                        onPress={() => router.navigate('/(tabs)/training')}
+                      >
                         Treinar
                       </Button>
                     ) : (

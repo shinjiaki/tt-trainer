@@ -153,22 +153,22 @@ export function HomeScreen() {
         <SectionLabel>Atalhos</SectionLabel>
         <View style={{ gap: 10 }}>
           <Shortcut
-            icon="court"
+            icon="gym"
             title="Cadastrar Ginásio"
             subtitle="Gerencie seus locais de treino"
             onPress={() => router.navigate('/gyms')}
+          />
+          <Shortcut
+            icon="court"
+            title="Gerenciar quadras"
+            subtitle="Monte o layout das mesas"
+            onPress={() => router.navigate('/(tabs)/courts')}
           />
           <Shortcut
             icon="players"
             title="Cadastrar jogador"
             subtitle="Adicione alunos ao seu grupo"
             onPress={() => router.navigate('/(tabs)/players')}
-          />
-          <Shortcut
-            icon="paddle"
-            title="Gerenciar quadras"
-            subtitle="Monte o layout das mesas"
-            onPress={() => router.navigate('/(tabs)/courts')}
           />
         </View>
       </View>

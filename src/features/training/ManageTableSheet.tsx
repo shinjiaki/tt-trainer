@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, BottomSheet, IconButton, LevelBadge, SegmentedControl, TextField } from '@/components';
+import {
+  Avatar,
+  BottomSheet,
+  IconButton,
+  LevelBadge,
+  SegmentedControl,
+  TextField,
+} from '@/components';
 import { Icon } from '@/icons';
 import type { Player, TableFormat, TableModel, TableSide } from '@/models/types';
 import { coachCapacity, playerCapacity } from '@/store/useStore';
@@ -67,7 +74,7 @@ export function ManageTableSheet({
           <SegmentedControl<TableFormat>
             value={format}
             options={[
-              { label: 'Treino (1 × N)', value: 'training' },
+              { label: 'Treino', value: 'training' },
               { label: 'Duplas (2 × 2)', value: 'doubles' },
             ]}
             onChange={onSetFormat}
@@ -81,7 +88,11 @@ export function ManageTableSheet({
             {doubles ? '/2' : '/1'}
           </SubLabel>
           {coach.length === 0 ? (
-            <Empty>{doubles ? 'Vazio. Adicione do banco abaixo.' : 'Sem treinador definido. Adicione do banco abaixo.'}</Empty>
+            <Empty>
+              {doubles
+                ? 'Vazio. Adicione do banco abaixo.'
+                : 'Sem treinador definido. Adicione do banco abaixo.'}
+            </Empty>
           ) : (
             <View style={{ gap: 8 }}>
               {coach.map((p) => (
@@ -131,7 +142,9 @@ export function ManageTableSheet({
                 >
                   <Avatar player={p} size={36} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: fonts.ui600, fontSize: 15, color: colors.text }}>{p.name}</Text>
+                    <Text style={{ fontFamily: fonts.ui600, fontSize: 15, color: colors.text }}>
+                      {p.name}
+                    </Text>
                     <LevelBadge level={p.level} small />
                   </View>
                   <AddButton
@@ -177,7 +190,9 @@ function SubLabel({ children }: { children: React.ReactNode }) {
 function Empty({ children }: { children: React.ReactNode }) {
   const { colors, fonts } = useTheme();
   return (
-    <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textFaint, paddingBottom: 4 }}>
+    <Text
+      style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textFaint, paddingBottom: 4 }}
+    >
       {children}
     </Text>
   );
@@ -198,7 +213,9 @@ function SeatedRow({ player, onRemove }: { player: Player; onRemove: () => void 
     >
       <Avatar player={player} size={36} />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: fonts.ui600, fontSize: 15, color: colors.text }}>{player.name}</Text>
+        <Text style={{ fontFamily: fonts.ui600, fontSize: 15, color: colors.text }}>
+          {player.name}
+        </Text>
         <LevelBadge level={player.level} small />
       </View>
       <IconButton icon="close" tone="danger" size={34} onPress={onRemove} />

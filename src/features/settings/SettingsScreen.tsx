@@ -75,7 +75,9 @@ export function SettingsScreen() {
         <SectionLabel>Aparência</SectionLabel>
         <Group>
           <View style={{ padding: 14, gap: 10 }}>
-            <Text style={{ fontFamily: fonts.ui600, fontSize: 14.5, color: colors.text }}>Tema</Text>
+            <Text style={{ fontFamily: fonts.ui600, fontSize: 14.5, color: colors.text }}>
+              Tema
+            </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {THEME_OPTIONS.map((opt) => {
                 const palette = Themes[opt.key];
@@ -96,10 +98,30 @@ export function SettingsScreen() {
                     }}
                   >
                     <View style={{ flexDirection: 'row', gap: 4 }}>
-                      <View style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: palette.colors.primary }} />
-                      <View style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: palette.colors.accent }} />
+                      <View
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 5,
+                          backgroundColor: palette.colors.primary,
+                        }}
+                      />
+                      <View
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 5,
+                          backgroundColor: palette.colors.accent,
+                        }}
+                      />
                     </View>
-                    <Text style={{ fontFamily: fonts.ui600, fontSize: 11.5, color: palette.colors.text }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.ui600,
+                        fontSize: 11.5,
+                        color: palette.colors.text,
+                      }}
+                    >
                       {opt.label}
                     </Text>
                   </Pressable>
@@ -145,7 +167,7 @@ export function SettingsScreen() {
           <Row
             icon="timer"
             title="Duração do jogo"
-            sub="Tempo sugerido por rodada"
+            sub="Tempo sugerido por rodada (Not working)"
             right={
               <Stepper
                 compact
@@ -160,17 +182,23 @@ export function SettingsScreen() {
           <Row
             icon="bell"
             title="Alerta de rodízio"
-            sub="Som ao fim do tempo do jogo"
+            sub="Som ao fim do tempo do jogo (Not working)"
             right={
-              <Toggle on={settings.rotationAlert} onChange={(v) => updateSettings({ rotationAlert: v })} />
+              <Toggle
+                on={settings.rotationAlert}
+                onChange={(v) => updateSettings({ rotationAlert: v })}
+              />
             }
           />
           <Row
             icon="paddle"
             title="Manter tela ligada"
-            sub="Durante o treino ativo"
+            sub="Durante o treino ativo (Not working)"
             right={
-              <Toggle on={settings.keepScreenAwake} onChange={(v) => updateSettings({ keepScreenAwake: v })} />
+              <Toggle
+                on={settings.keepScreenAwake}
+                onChange={(v) => updateSettings({ keepScreenAwake: v })}
+              />
             }
           />
           <View style={{ padding: 14, gap: 10 }}>
@@ -209,9 +237,12 @@ export function SettingsScreen() {
         <Group>
           <Row
             icon="bell"
-            title="Sons e vibração"
+            title="Sons e vibração (Not working)"
             right={
-              <Toggle on={settings.soundVibration} onChange={(v) => updateSettings({ soundVibration: v })} />
+              <Toggle
+                on={settings.soundVibration}
+                onChange={(v) => updateSettings({ soundVibration: v })}
+              />
             }
           />
           <Row
@@ -230,7 +261,11 @@ export function SettingsScreen() {
         </Group>
       </View>
 
-      <BottomSheet open={editingProfile} onClose={() => setEditingProfile(false)} title="Editar perfil">
+      <BottomSheet
+        open={editingProfile}
+        onClose={() => setEditingProfile(false)}
+        title="Editar perfil"
+      >
         <View style={{ gap: 18 }}>
           <TextField
             label="Nome do treinador"
@@ -325,7 +360,9 @@ export function SettingsScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontFamily: fonts.display700, fontSize: 17, color: '#fff' }}>SD</Text>
+                <Text style={{ fontFamily: fonts.display700, fontSize: 17, color: '#fff' }}>
+                  SD
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fonts.display600, fontSize: 16, color: colors.text }}>
@@ -395,7 +432,13 @@ function Row({
   return (
     <Container
       onPress={onPress}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 13 }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 13,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
+      }}
     >
       <View
         style={{
@@ -412,7 +455,9 @@ function Row({
       <View style={{ flex: 1 }}>
         <Text style={{ fontFamily: fonts.ui600, fontSize: 14.5, color: colors.text }}>{title}</Text>
         {sub && (
-          <Text style={{ fontFamily: fonts.ui400, fontSize: 12, color: colors.textMuted }}>{sub}</Text>
+          <Text style={{ fontFamily: fonts.ui400, fontSize: 12, color: colors.textMuted }}>
+            {sub}
+          </Text>
         )}
       </View>
       {right}

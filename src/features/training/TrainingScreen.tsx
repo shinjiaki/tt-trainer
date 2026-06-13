@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar } from '@/components';
+import { Avatar, BottomSheet, Button } from '@/components';
 import { Icon } from '@/icons';
 import type { Player, TableModel, TableSide } from '@/models/types';
 import { assignedIdSet } from '@/store/selectors';
@@ -44,6 +44,7 @@ export function TrainingScreen() {
   const layout = useStore((s) => s.settings.trainingLayout);
   const placePlayer = useStore((s) => s.placePlayer);
   const removePlayer = useStore((s) => s.removePlayer);
+  const clearCourtTables = useStore((s) => s.clearCourtTables);
   const setTableFormat = useStore((s) => s.setTableFormat);
   const renameTable = useStore((s) => s.renameTable);
 
@@ -64,6 +65,7 @@ export function TrainingScreen() {
   // ── interaction state ──────────────────────────────────
   const [selBench, setSelBench] = useState<string | null>(null);
   const [sheetTable, setSheetTable] = useState<TableModel | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const draggingIdRef = useRef<string | null>(null);
@@ -192,12 +194,26 @@ export function TrainingScreen() {
               <Icon name="chevron" size={17} color={colors.textFaint} />
             </Pressable>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <Icon name="players" size={18} color={colors.textMuted} />
-            <Text style={{ fontFamily: fonts.mono700, fontSize: 15, color: colors.textMuted }}>
-              {placed}
-              <Text style={{ color: colors.textFaint }}>/{gymPlayers.length}</Text>
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {placed > 0 && (
+              <Pressable
+                onPress={() => setConfirmClear(true)}
+                hitSlop={8}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+              >
+                <Icon name="bench" size={18} color={colors.textMuted} />
+                <Text style={{ fontFamily: fonts.ui600, fontSize: 13, color: colors.textMuted }}>
+                  Esvaziar
+                </Text>
+              </Pressable>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <Icon name="players" size={18} color={colors.textMuted} />
+              <Text style={{ fontFamily: fonts.mono700, fontSize: 15, color: colors.textMuted }}>
+                {placed}
+                <Text style={{ color: colors.textFaint }}>/{gymPlayers.length}</Text>
+              </Text>
+            </View>
           </View>
         </View>
         <TimerBar />
@@ -279,6 +295,30 @@ export function TrainingScreen() {
           <Avatar player={ghostPlayer} size={46} />
         </Animated.View>
       )}
+
+      {/* confirm clear tables */}
+      <BottomSheet open={confirmClear} onClose={() => setConfirmClear(false)} title="Esvaziar mesas?">
+        <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, lineHeight: 20, marginBottom: 18 }}>
+          Todos os {placed} jogadores em mesa voltarão para o banco. Os formatos e nomes das mesas são mantidos.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button variant="ghost" full style={{ flex: 1 }} onPress={() => setConfirmClear(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            icon="bench"
+            full
+            style={{ flex: 1 }}
+            onPress={() => {
+              clearCourtTables(court.id);
+              setConfirmClear(false);
+            }}
+          >
+            Esvaziar
+          </Button>
+        </View>
+      </BottomSheet>
 
       {/* manage table sheet */}
       <ManageTableSheet

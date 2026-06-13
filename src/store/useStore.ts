@@ -112,6 +112,8 @@ export interface AppState {
   placePlayer: (playerId: string, tableId: string, side: TableSide) => void;
   /** Send a player back to the bench. */
   removePlayer: (playerId: string) => void;
+  /** Clear every table in a court, sending all assigned players back to the bench. */
+  clearCourtTables: (courtId: string) => void;
   /** Switch a table between 'training' (1×N) and 'doubles' (2×2). */
   setTableFormat: (tableId: string, format: TableFormat) => void;
 
@@ -265,6 +267,18 @@ export const useStore = create<AppState>()(
 
       removePlayer: (playerId) =>
         set((s) => ({ assignments: withoutPlayer(s.assignments, playerId) })),
+
+      clearCourtTables: (courtId) =>
+        set((s) => {
+          const court = s.courts.find((c) => c.id === courtId);
+          if (!court) return s;
+          const tableIds = new Set(court.tables.map((t) => t.id));
+          const next: Assignments = {};
+          for (const [tid, a] of Object.entries(s.assignments)) {
+            next[tid] = tableIds.has(tid) ? emptyAssignment() : a;
+          }
+          return { assignments: next };
+        }),
 
       setTableFormat: (tableId, format) =>
         set((s) => {
