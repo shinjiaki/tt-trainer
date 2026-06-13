@@ -153,7 +153,7 @@ export function CourtsScreen() {
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                     {active ? (
-                      <Button icon="play" size="sm" onPress={() => router.navigate('/training')}>
+                      <Button icon="play" size="sm" onPress={() => router.navigate('/(tabs)/training')}>
                         Treinar
                       </Button>
                     ) : (

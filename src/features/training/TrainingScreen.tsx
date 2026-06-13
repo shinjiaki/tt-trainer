@@ -147,7 +147,7 @@ export function TrainingScreen() {
         <Text style={{ fontFamily: fonts.ui600, fontSize: 16, color: colors.text }}>
           Nenhuma quadra ativa
         </Text>
-        <Pressable onPress={() => router.navigate('/courts')}>
+        <Pressable onPress={() => router.navigate('/(tabs)/courts')}>
           <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.primary }}>
             Escolher quadra
           </Text>
@@ -177,7 +177,7 @@ export function TrainingScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.navigate('/courts')}
+              onPress={() => router.navigate('/(tabs)/courts')}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
             >
               <Text style={{ fontFamily: fonts.display600, fontSize: 22, color: colors.text }}>

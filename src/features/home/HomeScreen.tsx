@@ -108,7 +108,7 @@ export function HomeScreen() {
           </View>
 
           <Pressable
-            onPress={() => router.navigate('/training')}
+            onPress={() => router.navigate('/(tabs)/training')}
             style={{
               marginTop: 16,
               backgroundColor: '#fff',
@@ -128,7 +128,7 @@ export function HomeScreen() {
         </View>
       ) : (
         <Card
-          onPress={() => router.navigate('/courts')}
+          onPress={() => router.navigate('/(tabs)/courts')}
           style={{ alignItems: 'center', gap: 8, paddingVertical: 28 }}
         >
           <Icon name="court" size={28} color={colors.textFaint} />
@@ -162,13 +162,13 @@ export function HomeScreen() {
             icon="players"
             title="Cadastrar jogador"
             subtitle="Adicione alunos ao seu grupo"
-            onPress={() => router.navigate('/players')}
+            onPress={() => router.navigate('/(tabs)/players')}
           />
           <Shortcut
             icon="paddle"
             title="Gerenciar quadras"
             subtitle="Monte o layout das mesas"
-            onPress={() => router.navigate('/courts')}
+            onPress={() => router.navigate('/(tabs)/courts')}
           />
         </View>
       </View>
