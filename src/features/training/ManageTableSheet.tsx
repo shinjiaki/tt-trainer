@@ -17,11 +17,13 @@ import { useTheme } from '@/theme';
 interface ManageTableSheetProps {
   table: TableModel | null;
   format: TableFormat;
+  type: string;
   coach: Player[];
   players: Player[];
   bench: Player[];
   onClose: () => void;
   onSetFormat: (format: TableFormat) => void;
+  onSetType: (type: string) => void;
   onRemove: (playerId: string) => void;
   onAdd: (playerId: string, side: TableSide) => void;
   onRename: (label: string) => void;
@@ -30,11 +32,13 @@ interface ManageTableSheetProps {
 export function ManageTableSheet({
   table,
   format,
+  type,
   coach,
   players,
   bench,
   onClose,
   onSetFormat,
+  onSetType,
   onRemove,
   onAdd,
   onRename,
@@ -42,15 +46,20 @@ export function ManageTableSheet({
   const { colors, fonts } = useTheme();
   const doubles = format === 'doubles';
 
-  // Local draft for the table name; committed on blur so clearing the field mid-typing
-  // doesn't immediately fall back to the old label.
+  // Local drafts committed on close so clearing a field mid-typing doesn't
+  // immediately fall back to the old value.
   const [nameDraft, setNameDraft] = useState('');
+  const [typeDraft, setTypeDraft] = useState('');
   useEffect(() => {
-    if (table) setNameDraft(table.label);
+    if (table) {
+      setNameDraft(table.label);
+      setTypeDraft(type);
+    }
   }, [table?.id]);
 
   const handleClose = () => {
     if (table && nameDraft.trim() && nameDraft.trim() !== table.label) onRename(nameDraft);
+    if (table && typeDraft.trim() !== type) onSetType(typeDraft);
     onClose();
   };
 
@@ -80,6 +89,14 @@ export function ManageTableSheet({
             onChange={onSetFormat}
           />
         </View>
+
+        {/* training type — optional free-text tag shown on the table */}
+        <TextField
+          label="Tipo de treino (opcional)"
+          value={typeDraft}
+          onChangeText={setTypeDraft}
+          placeholder="forehand, backhand, drive…"
+        />
 
         {/* coach side */}
         <View>

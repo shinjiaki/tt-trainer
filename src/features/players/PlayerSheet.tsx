@@ -3,11 +3,11 @@ import { Pressable, Text, View } from 'react-native';
 
 import { BottomSheet, Button, ColorSwatches, SegmentedControl, TextField } from '@/components';
 import { Icon } from '@/icons';
-import type { Gym, HandName, LevelName, Player } from '@/models/types';
+import type { Gym, HandName, LevelName, Player, Weekday } from '@/models/types';
 import { useTheme } from '@/theme';
 import { initials } from '@/utils/text';
 
-import { HANDS, LEVELS, PLAYER_COLORS } from './constants';
+import { HANDS, LEVELS, PLAYER_COLORS, WEEKDAYS } from './constants';
 
 export type PlayerDraft = Omit<Player, 'id'>;
 
@@ -26,6 +26,7 @@ const blankDraft = (gyms: Gym[]): PlayerDraft => ({
   hand: 'Destro',
   color: PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)],
   gymIds: gyms[0] ? [gyms[0].id] : [],
+  weekdays: [],
 });
 
 export function PlayerSheet({ editing, gyms, onClose, onSave, onDelete }: PlayerSheetProps) {
@@ -35,8 +36,8 @@ export function PlayerSheet({ editing, gyms, onClose, onSave, onDelete }: Player
   useEffect(() => {
     if (editing === 'new') setDraft(blankDraft(gyms));
     else if (editing) {
-      const { name, level, hand, color, gymIds } = editing;
-      setDraft({ name, level, hand, color, gymIds: [...gymIds] });
+      const { name, level, hand, color, gymIds, weekdays } = editing;
+      setDraft({ name, level, hand, color, gymIds: [...gymIds], weekdays: [...(weekdays ?? [])] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
@@ -45,6 +46,14 @@ export function PlayerSheet({ editing, gyms, onClose, onSave, onDelete }: Player
     setDraft((d) => ({
       ...d,
       gymIds: d.gymIds.includes(id) ? d.gymIds.filter((x) => x !== id) : [...d.gymIds, id],
+    }));
+
+  const toggleWeekday = (day: Weekday) =>
+    setDraft((d) => ({
+      ...d,
+      weekdays: d.weekdays.includes(day)
+        ? d.weekdays.filter((x) => x !== day)
+        : [...d.weekdays, day],
     }));
 
   return (
@@ -94,6 +103,48 @@ export function PlayerSheet({ editing, gyms, onClose, onSave, onDelete }: Player
             options={HANDS}
             onChange={(hand) => setDraft((d) => ({ ...d, hand }))}
           />
+        </Field>
+
+        <Field
+          label="Frequência"
+          extra={
+            <Text style={{ color: colors.textFaint, fontFamily: fonts.ui500 }}>
+              ({draft.weekdays.length}{' '}
+              {draft.weekdays.length === 1 ? 'dia' : 'dias'})
+            </Text>
+          }
+        >
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {WEEKDAYS.map((d) => {
+              const on = draft.weekdays.includes(d.value);
+              return (
+                <Pressable
+                  key={d.value}
+                  onPress={() => toggleWeekday(d.value)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    backgroundColor: on ? colors.primary : colors.surfaceMuted,
+                    borderWidth: 1.5,
+                    borderColor: on ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.ui600,
+                      fontSize: 12.5,
+                      color: on ? '#fff' : colors.textMuted,
+                    }}
+                  >
+                    {d.short}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </Field>
 
         <Field

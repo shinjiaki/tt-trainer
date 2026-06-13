@@ -12,6 +12,8 @@ type ViewRef = ComponentRef<typeof View>;
 export interface TableTopProps {
   table: TableModel;
   format: TableFormat;
+  /** Optional free-text training type; shown as a tag opposite the label. */
+  type?: string;
   coach: Player[];
   players: Player[];
   /** Which side is currently hovered during a drag, if any. */
@@ -26,6 +28,7 @@ export interface TableTopProps {
 export function TableTop({
   table,
   format,
+  type,
   coach,
   players,
   dragOverSide,
@@ -74,6 +77,31 @@ export function TableTop({
           <Text style={{ fontFamily: fonts.ui700, fontSize: 9, color: colors.accent }}>DUPLAS</Text>
         )}
       </View>
+
+      {/* training type tag — opposite the label (top-right) */}
+      {type ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: 7,
+            right: 9,
+            zIndex: 2,
+            backgroundColor: colors.accentSoft,
+            borderWidth: 1,
+            borderColor: colors.accent,
+            borderRadius: 7,
+            paddingVertical: 2,
+            paddingHorizontal: 8,
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{ fontFamily: fonts.ui700, fontSize: 10, letterSpacing: 0.3, color: colors.accent }}
+          >
+            {type}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={{ flexDirection: 'row', minHeight }}>
         {/* coach side */}

@@ -80,7 +80,7 @@ export function HomeScreen() {
                 {activeCourt.name}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                <Icon name="court" size={14} color="#fff" />
+                <Icon name="gym" size={14} color="#fff" />
                 <Text
                   numberOfLines={1}
                   style={{
