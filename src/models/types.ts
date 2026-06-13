@@ -6,6 +6,9 @@
 export type LevelName = 'Iniciante' | 'Intermediário' | 'Avançado';
 export type HandName = 'Destro' | 'Canhoto';
 
+/** Day of the week, matching JS `Date.getDay()` — 0 = Domingo … 6 = Sábado. */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 /** §3.1 Gym — a training venue. A trainer has N gyms. */
 export interface Gym {
   id: string;
@@ -43,6 +46,8 @@ export interface Player {
   hand: HandName;
   color: string;
   gymIds: string[];
+  /** Days the player trains (Frequência). Empty = unspecified. */
+  weekdays: Weekday[];
 }
 
 /**
@@ -70,6 +75,12 @@ export type Assignments = Record<string, TableAssignment>;
 
 /** Map tableId -> chosen format (defaults to 'training' when absent). */
 export type TableFormats = Record<string, TableFormat>;
+
+/**
+ * Map tableId -> free-text training type (e.g. "forehand", "backhand", "drive").
+ * Optional per table; absent or empty string means no tag is shown.
+ */
+export type TableTypes = Record<string, string>;
 
 export type ThemeName = 'azul' | 'escuro' | 'verde';
 /** [accent, accentSoft] override pair. */

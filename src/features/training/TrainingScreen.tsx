@@ -5,8 +5,9 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, BottomSheet, Button } from '@/components';
+import { WEEKDAYS } from '@/features/players/constants';
 import { Icon } from '@/icons';
-import type { Player, TableModel, TableSide } from '@/models/types';
+import type { Player, TableModel, TableSide, Weekday } from '@/models/types';
 import { assignedIdSet } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { useTheme } from '@/theme';
@@ -39,6 +40,7 @@ export function TrainingScreen() {
   const players = useStore((s) => s.players);
   const assignments = useStore((s) => s.assignments);
   const tableFormats = useStore((s) => s.tableFormats);
+  const tableTypes = useStore((s) => s.tableTypes);
   const activeCourtId = useStore((s) => s.activeCourtId);
   const moveMode = useStore((s) => s.settings.moveMode);
   const layout = useStore((s) => s.settings.trainingLayout);
@@ -46,13 +48,24 @@ export function TrainingScreen() {
   const removePlayer = useStore((s) => s.removePlayer);
   const clearCourtTables = useStore((s) => s.clearCourtTables);
   const setTableFormat = useStore((s) => s.setTableFormat);
+  const setTableType = useStore((s) => s.setTableType);
   const renameTable = useStore((s) => s.renameTable);
+
+  // Optional weekday filter: narrow players to those who train on the chosen day.
+  const [dayFilter, setDayFilter] = useState<Weekday | null>(null);
 
   const court = courts.find((c) => c.id === activeCourtId) ?? null;
   const gym = gyms.find((g) => g.id === court?.gymId) ?? null;
   const gymPlayers = useMemo(
-    () => (gym ? players.filter((p) => p.gymIds.includes(gym.id)) : []),
-    [players, gym],
+    () =>
+      gym
+        ? players.filter(
+            (p) =>
+              p.gymIds.includes(gym.id) &&
+              (dayFilter === null || (p.weekdays ?? []).includes(dayFilter)),
+          )
+        : [],
+    [players, gym, dayFilter],
   );
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const resolve = (ids: string[]): Player[] =>
@@ -217,6 +230,24 @@ export function TrainingScreen() {
           </View>
         </View>
         <TimerBar />
+
+        {/* weekday filter — optional, narrows players to one training day */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 7, paddingTop: 10, paddingBottom: 2 }}
+          style={{ marginHorizontal: -2 }}
+        >
+          <DayChip label="Todos" active={dayFilter === null} onPress={() => setDayFilter(null)} />
+          {WEEKDAYS.map((d) => (
+            <DayChip
+              key={d.value}
+              label={d.short}
+              active={dayFilter === d.value}
+              onPress={() => setDayFilter((cur) => (cur === d.value ? null : d.value))}
+            />
+          ))}
+        </ScrollView>
       </View>
 
       {/* canvas */}
@@ -242,6 +273,7 @@ export function TrainingScreen() {
                     <TableTop
                       table={t}
                       format={format}
+                      type={tableTypes[t.id]}
                       coach={resolve(a.coach)}
                       players={resolve(a.players)}
                       dragOverSide={dragOverSide}
@@ -324,16 +356,50 @@ export function TrainingScreen() {
       <ManageTableSheet
         table={liveSheetTable}
         format={sheetTable ? (tableFormats[sheetTable.id] ?? 'training') : 'training'}
+        type={sheetTable ? (tableTypes[sheetTable.id] ?? '') : ''}
         coach={sheetTable ? resolve((assignments[sheetTable.id] ?? { coach: [] }).coach ?? []) : []}
         players={sheetTable ? resolve((assignments[sheetTable.id] ?? { players: [] }).players ?? []) : []}
         bench={bench}
         onClose={() => setSheetTable(null)}
         onSetFormat={(format) => sheetTable && setTableFormat(sheetTable.id, format)}
+        onSetType={(type) => sheetTable && setTableType(sheetTable.id, type)}
         onRemove={(playerId) => removePlayer(playerId)}
         onAdd={(playerId, side) => sheetTable && placePlayer(playerId, sheetTable.id, side)}
         onRename={(label) => sheetTable && renameTable(sheetTable.id, label)}
       />
     </View>
+  );
+}
+
+/** Compact pill used by the weekday filter row. */
+function DayChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const { colors, fonts } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        backgroundColor: active ? colors.primary : colors.surfaceMuted,
+        borderWidth: 1,
+        borderColor: active ? colors.primary : colors.border,
+        borderRadius: 999,
+        paddingVertical: 6,
+        paddingHorizontal: 13,
+      }}
+    >
+      <Text
+        style={{ fontFamily: fonts.ui600, fontSize: 13, color: active ? '#fff' : colors.textMuted }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

@@ -18,6 +18,7 @@ import type {
   TableFormats,
   TableModel,
   TableSide,
+  TableTypes,
   TimerState,
 } from '@/models/types';
 import { uid } from '@/utils/text';
@@ -29,6 +30,7 @@ import {
   SEED_GYMS,
   SEED_PLAYERS,
   SEED_TABLE_FORMATS,
+  SEED_TABLE_TYPES,
 } from './seed';
 
 /** Max players per side given the table format (new feature). */
@@ -63,13 +65,16 @@ const pruneToTables = (
   courts: Court[],
   assignments: Assignments,
   formats: TableFormats,
-): { assignments: Assignments; tableFormats: TableFormats } => {
+  types: TableTypes,
+): { assignments: Assignments; tableFormats: TableFormats; tableTypes: TableTypes } => {
   const valid = new Set(courts.flatMap((c) => c.tables.map((t) => t.id)));
   const nextA: Assignments = {};
   for (const [tid, a] of Object.entries(assignments)) if (valid.has(tid)) nextA[tid] = a;
   const nextF: TableFormats = {};
   for (const [tid, f] of Object.entries(formats)) if (valid.has(tid)) nextF[tid] = f;
-  return { assignments: nextA, tableFormats: nextF };
+  const nextT: TableTypes = {};
+  for (const [tid, t] of Object.entries(types)) if (valid.has(tid)) nextT[tid] = t;
+  return { assignments: nextA, tableFormats: nextF, tableTypes: nextT };
 };
 
 export interface AppState {
@@ -82,6 +87,7 @@ export interface AppState {
   selectedGymId: string | null;
   assignments: Assignments;
   tableFormats: TableFormats;
+  tableTypes: TableTypes;
   // training timer (not persisted)
   timer: TimerState;
   // preferences
@@ -116,6 +122,8 @@ export interface AppState {
   clearCourtTables: (courtId: string) => void;
   /** Switch a table between 'training' (1×N) and 'doubles' (2×2). */
   setTableFormat: (tableId: string, format: TableFormat) => void;
+  /** Set the free-text training type tag for a table (empty clears it). */
+  setTableType: (tableId: string, type: string) => void;
 
   // ── Timer ──────────────────────────────────────────────
   tickTimer: () => void;
@@ -136,6 +144,7 @@ export const useStore = create<AppState>()(
       selectedGymId: SEED_COURTS[0]?.gymId ?? SEED_GYMS[0]?.id ?? null,
       assignments: SEED_ASSIGNMENTS,
       tableFormats: SEED_TABLE_FORMATS,
+      tableTypes: SEED_TABLE_TYPES,
       timer: { seconds: 0, running: false },
       settings: DEFAULT_SETTINGS,
 
@@ -154,7 +163,12 @@ export const useStore = create<AppState>()(
       deleteGym: (id) =>
         set((s) => {
           const courts = s.courts.filter((c) => c.gymId !== id);
-          const { assignments, tableFormats } = pruneToTables(courts, s.assignments, s.tableFormats);
+          const { assignments, tableFormats, tableTypes } = pruneToTables(
+            courts,
+            s.assignments,
+            s.tableFormats,
+            s.tableTypes,
+          );
           const activeStillExists = courts.some((c) => c.id === s.activeCourtId);
           return {
             gyms: s.gyms.filter((g) => g.id !== id),
@@ -165,6 +179,7 @@ export const useStore = create<AppState>()(
             })),
             assignments,
             tableFormats,
+            tableTypes,
             activeCourtId: activeStillExists ? s.activeCourtId : (courts[0]?.id ?? null),
             selectedGymId:
               s.selectedGymId === id
@@ -195,19 +210,30 @@ export const useStore = create<AppState>()(
               ? { ...c, name: name.trim() || c.name, cols, tables: generateTables(tableCount, cols) }
               : c,
           );
-          const { assignments, tableFormats } = pruneToTables(courts, s.assignments, s.tableFormats);
-          return { courts, assignments, tableFormats };
+          const { assignments, tableFormats, tableTypes } = pruneToTables(
+            courts,
+            s.assignments,
+            s.tableFormats,
+            s.tableTypes,
+          );
+          return { courts, assignments, tableFormats, tableTypes };
         }),
 
       deleteCourt: (id) =>
         set((s) => {
           const courts = s.courts.filter((c) => c.id !== id);
-          const { assignments, tableFormats } = pruneToTables(courts, s.assignments, s.tableFormats);
+          const { assignments, tableFormats, tableTypes } = pruneToTables(
+            courts,
+            s.assignments,
+            s.tableFormats,
+            s.tableTypes,
+          );
           const activeStillExists = courts.some((c) => c.id === s.activeCourtId);
           return {
             courts,
             assignments,
             tableFormats,
+            tableTypes,
             activeCourtId: activeStillExists ? s.activeCourtId : (courts[0]?.id ?? null),
           };
         }),
@@ -297,6 +323,15 @@ export const useStore = create<AppState>()(
           };
         }),
 
+      setTableType: (tableId, type) =>
+        set((s) => {
+          const trimmed = type.trim();
+          const next = { ...s.tableTypes };
+          if (trimmed) next[tableId] = trimmed;
+          else delete next[tableId];
+          return { tableTypes: next };
+        }),
+
       tickTimer: () => set((s) => ({ timer: { ...s.timer, seconds: s.timer.seconds + 1 } })),
       toggleTimer: () => set((s) => ({ timer: { ...s.timer, running: !s.timer.running } })),
       resetTimer: () => set({ timer: { seconds: 0, running: false } }),
@@ -305,8 +340,16 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'tt-trainer-state-v1',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
+      // v2: players gained a `weekdays` field (Frequência). Backfill it as empty.
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<AppState> | undefined;
+        if (state?.players && version < 2) {
+          state.players = state.players.map((p) => ({ ...p, weekdays: p.weekdays ?? [] }));
+        }
+        return state as AppState;
+      },
       partialize: (s) => ({
         gyms: s.gyms,
         courts: s.courts,
@@ -315,6 +358,7 @@ export const useStore = create<AppState>()(
         selectedGymId: s.selectedGymId,
         assignments: s.assignments,
         tableFormats: s.tableFormats,
+        tableTypes: s.tableTypes,
         settings: s.settings,
       }),
     },

@@ -2,7 +2,15 @@
  * Sample seed data for first launch (§7). Transcribed from claude_design/data.js
  * and adapted to the two-sided assignment model (coach / players).
  */
-import type { Assignments, Court, Gym, Player, Settings, TableFormats } from '@/models/types';
+import type {
+  Assignments,
+  Court,
+  Gym,
+  Player,
+  Settings,
+  TableFormats,
+  TableTypes,
+} from '@/models/types';
 
 export const SEED_GYMS: Gym[] = [
   { id: 'g1', name: 'Arena Pinheiros', city: 'São Paulo · SP', color: '#1d5fd6' },
@@ -17,6 +25,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#1d5fd6',
     gymIds: ['g1'],
+    weekdays: [1, 3, 5],
   },
   {
     id: 'p2',
@@ -25,6 +34,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Canhoto',
     color: '#ff6a2b',
     gymIds: ['g1', 'g2'],
+    weekdays: [2, 4],
   },
   {
     id: 'p3',
@@ -33,6 +43,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#1f9d5b',
     gymIds: ['g1'],
+    weekdays: [1, 3],
   },
   {
     id: 'p4',
@@ -41,6 +52,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#8b5cf6',
     gymIds: ['g2'],
+    weekdays: [2, 4, 6],
   },
   {
     id: 'p5',
@@ -49,6 +61,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#e0a400',
     gymIds: ['g1'],
+    weekdays: [1, 5],
   },
   {
     id: 'p6',
@@ -57,6 +70,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Canhoto',
     color: '#e64980',
     gymIds: ['g1', 'g2'],
+    weekdays: [3, 5],
   },
   {
     id: 'p7',
@@ -65,6 +79,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#0ea5b7',
     gymIds: ['g2'],
+    weekdays: [2, 4],
   },
   {
     id: 'p8',
@@ -73,6 +88,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Canhoto',
     color: '#f25f3a',
     gymIds: ['g1'],
+    weekdays: [1, 3, 5],
   },
   {
     id: 'p9',
@@ -81,6 +97,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#7c8b3a',
     gymIds: ['g2'],
+    weekdays: [6, 0],
   },
   {
     id: 'p10',
@@ -89,6 +106,7 @@ export const SEED_PLAYERS: Player[] = [
     hand: 'Destro',
     color: '#5b6cff',
     gymIds: ['g1', 'g2'],
+    weekdays: [1, 2, 3, 4, 5],
   },
 ];
 
@@ -129,6 +147,12 @@ export const SEED_ASSIGNMENTS: Assignments = {
 
 export const SEED_TABLE_FORMATS: TableFormats = {
   t2: 'doubles',
+};
+
+/** Sample training-type tags — shows the feature off on first launch. */
+export const SEED_TABLE_TYPES: TableTypes = {
+  t1: 'Forehand',
+  t3: 'Drive',
 };
 
 export const DEFAULT_SETTINGS: Settings = {
