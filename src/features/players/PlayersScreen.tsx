@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -11,6 +12,7 @@ import { PlayerSheet } from './PlayerSheet';
 
 export function PlayersScreen() {
   const { colors, fonts } = useTheme();
+  const router = useRouter();
   const players = useStore((s) => s.players);
   const gyms = useStore((s) => s.gyms);
   const addPlayer = useStore((s) => s.addPlayer);
@@ -110,7 +112,7 @@ export function PlayersScreen() {
         {filtered.map((p) => (
           <Pressable
             key={p.id}
-            onPress={() => setEditing(p)}
+            onPress={() => router.navigate(`/player/${p.id}`)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -160,7 +162,7 @@ export function PlayersScreen() {
                 </View>
               )}
             </View>
-            <Icon name="edit" size={19} color={colors.textFaint} />
+            <Icon name="chevron" size={19} color={colors.textFaint} />
           </Pressable>
         ))}
         {filtered.length === 0 && (

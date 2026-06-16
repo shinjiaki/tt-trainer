@@ -6,7 +6,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { Card, Screen, SectionLabel } from '@/components';
 import { Icon, type IconName } from '@/icons';
 import type { Court } from '@/models/types';
-import { placedCountForCourt } from '@/store/selectors';
+import { getActiveSession, placedCountForCourt } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { useTheme } from '@/theme';
 import { initials } from '@/utils/text';
@@ -21,6 +21,9 @@ export function HomeScreen() {
   const gyms = useStore((s) => s.gyms);
   const assignments = useStore((s) => s.assignments);
   const activeCourtId = useStore((s) => s.activeCourtId);
+  const activeSession = useStore(getActiveSession);
+
+  const goTrain = () => router.navigate(activeSession ? '/(tabs)/training' : '/session-setup');
 
   const activeCourt = courts.find((c) => c.id === activeCourtId) ?? null;
   const activeGym = gyms.find((g) => g.id === activeCourt?.gymId) ?? null;
@@ -108,7 +111,7 @@ export function HomeScreen() {
           </View>
 
           <Pressable
-            onPress={() => router.navigate('/(tabs)/training')}
+            onPress={goTrain}
             style={{
               marginTop: 16,
               backgroundColor: '#fff',
@@ -122,7 +125,7 @@ export function HomeScreen() {
           >
             <Icon name="play" size={18} color={colors.primary} />
             <Text style={{ fontFamily: fonts.ui700, fontSize: 15.5, color: colors.primary }}>
-              Iniciar treino
+              {activeSession ? 'Continuar treino' : 'Iniciar treino'}
             </Text>
           </Pressable>
         </View>
