@@ -188,6 +188,8 @@ export interface AppState {
   tickTimer: () => void;
   toggleTimer: () => void;
   resetTimer: () => void;
+  /** Set countdown duration in seconds; 0 clears back to the count-up stopwatch. */
+  setTimerDuration: (durationSeconds: number) => void;
 
   // ── Settings ───────────────────────────────────────────
   updateSettings: (patch: Partial<Settings>) => void;
@@ -206,7 +208,7 @@ export const useStore = create<AppState>()(
       tableTypes: SEED_TABLE_TYPES,
       sessions: [],
       activeSessionId: null,
-      timer: { seconds: 0, running: false },
+      timer: { mode: 'stopwatch', seconds: 0, durationSeconds: 0, running: false, finished: false },
       settings: DEFAULT_SETTINGS,
 
       addGym: (data) =>
@@ -528,9 +530,44 @@ export const useStore = create<AppState>()(
           activeSessionId: s.activeSessionId === id ? null : s.activeSessionId,
         })),
 
-      tickTimer: () => set((s) => ({ timer: { ...s.timer, seconds: s.timer.seconds + 1 } })),
-      toggleTimer: () => set((s) => ({ timer: { ...s.timer, running: !s.timer.running } })),
-      resetTimer: () => set({ timer: { seconds: 0, running: false } }),
+      tickTimer: () =>
+        set((s) => {
+          const t = s.timer;
+          if (t.mode === 'countdown') {
+            const next = t.seconds - 1;
+            if (next <= 0) return { timer: { ...t, seconds: 0, running: false, finished: true } };
+            return { timer: { ...t, seconds: next } };
+          }
+          return { timer: { ...t, seconds: t.seconds + 1 } };
+        }),
+      toggleTimer: () =>
+        set((s) => {
+          const t = s.timer;
+          // Restart a finished (or empty) countdown from its full duration on play.
+          if (!t.running && t.mode === 'countdown' && t.seconds <= 0) {
+            return { timer: { ...t, seconds: t.durationSeconds, running: true, finished: false } };
+          }
+          return { timer: { ...t, running: !t.running } };
+        }),
+      resetTimer: () =>
+        set((s) => {
+          const t = s.timer;
+          const seconds = t.mode === 'countdown' ? t.durationSeconds : 0;
+          return { timer: { ...t, seconds, running: false, finished: false } };
+        }),
+      /**
+       * Select a countdown duration (in seconds). Pass 0 to clear back to the
+       * count-up stopwatch. Always pauses and primes the new value.
+       */
+      setTimerDuration: (durationSeconds) =>
+        set(() => {
+          if (durationSeconds <= 0) {
+            return { timer: { mode: 'stopwatch', seconds: 0, durationSeconds: 0, running: false, finished: false } };
+          }
+          return {
+            timer: { mode: 'countdown', seconds: durationSeconds, durationSeconds, running: false, finished: false },
+          };
+        }),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
     }),

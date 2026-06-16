@@ -53,7 +53,10 @@ export function HomeScreen() {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#fff', fontFamily: fonts.display700, fontSize: 18 }}>
+          <Text
+            style={{ color: '#fff', fontFamily: fonts.display700, fontSize: 18 }}
+            onPress={() => router.navigate('/(tabs)/settings')}
+          >
             {initials(trainerName)}
           </Text>
         </View>

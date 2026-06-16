@@ -107,10 +107,20 @@ export interface Settings {
   trainingLayout: TrainingLayout;
 }
 
-/** §3.6 General training timer (counts up). */
+/**
+ * §3.6 General training timer. Two modes:
+ *  - `stopwatch`: counts up from 0 (default / "clear").
+ *  - `countdown`: counts down from `durationSeconds`; `finished` flips true at 0.
+ */
 export interface TimerState {
+  mode: 'stopwatch' | 'countdown';
+  /** Stopwatch: elapsed. Countdown: remaining. */
   seconds: number;
+  /** Selected countdown total in seconds (only meaningful in `countdown` mode). */
+  durationSeconds: number;
   running: boolean;
+  /** True once a countdown has reached 0 (drives the "time's up" animation). */
+  finished: boolean;
 }
 
 /** Lifecycle of a training session (Treino). */

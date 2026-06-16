@@ -24,7 +24,7 @@ const THEME_OPTIONS: { key: ThemeName; label: string }[] = [
 ];
 
 /** Keep in sync with app.json → expo.version. */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.4';
 
 export function SettingsScreen() {
   const { colors, fonts } = useTheme();
