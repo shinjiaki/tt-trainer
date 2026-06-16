@@ -48,6 +48,7 @@ function ThemedShell() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="gyms" />
         <Stack.Screen name="session-setup" />
+        <Stack.Screen name="session-edit/[id]" />
         <Stack.Screen name="player/[id]" />
       </Stack>
       <StatusBar style={dark ? 'light' : 'dark'} />

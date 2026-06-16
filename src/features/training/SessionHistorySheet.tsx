@@ -1,6 +1,7 @@
+import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-import { Avatar, BottomSheet, LevelBadge } from '@/components';
+import { Avatar, BottomSheet, Button, LevelBadge } from '@/components';
 import { Icon } from '@/icons';
 import type { Player, TrainingSession } from '@/models/types';
 import { useStore } from '@/store/useStore';
@@ -15,6 +16,7 @@ interface SessionHistorySheetProps {
 /** Read-only summary of a finished training session, with a delete action. */
 export function SessionHistorySheet({ session, onClose }: SessionHistorySheetProps) {
   const { colors, fonts } = useTheme();
+  const router = useRouter();
   const players = useStore((s) => s.players);
   const gyms = useStore((s) => s.gyms);
   const deleteSession = useStore((s) => s.deleteSession);
@@ -60,6 +62,18 @@ export function SessionHistorySheet({ session, onClose }: SessionHistorySheetPro
               ))}
             </Group>
           )}
+
+          <Button
+            full
+            variant="soft"
+            icon="edit"
+            onPress={() => {
+              onClose();
+              router.navigate(`/session-edit/${session.id}`);
+            }}
+          >
+            Editar treino
+          </Button>
 
           <Pressable
             onPress={() => {

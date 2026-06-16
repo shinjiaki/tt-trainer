@@ -174,6 +174,13 @@ export interface AppState {
   markNoShow: (playerId: string) => void;
   /** Undo a no-show, sending the player back to the bench. */
   unmarkNoShow: (playerId: string) => void;
+  /** Edit a past session's date/time/gym/roster/no-shows. */
+  updateSession: (
+    id: string,
+    patch: Partial<
+      Pick<TrainingSession, 'gymId' | 'date' | 'startTime' | 'endTime' | 'rosterIds' | 'noShowIds'>
+    >,
+  ) => void;
   /** Delete a session from history (or the active one). */
   deleteSession: (id: string) => void;
 
@@ -503,6 +510,17 @@ export const useStore = create<AppState>()(
             ),
           };
         }),
+
+      updateSession: (id, patch) =>
+        set((s) => ({
+          sessions: s.sessions.map((ses) => {
+            if (ses.id !== id) return ses;
+            const next = { ...ses, ...patch };
+            // Keep the invariant: no-shows are always a subset of the roster.
+            next.noShowIds = next.noShowIds.filter((pid) => next.rosterIds.includes(pid));
+            return next;
+          }),
+        })),
 
       deleteSession: (id) =>
         set((s) => ({

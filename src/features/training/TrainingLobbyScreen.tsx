@@ -8,7 +8,13 @@ import type { TrainingSession } from '@/models/types';
 import { finishedSessions } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { useTheme } from '@/theme';
-import { formatDateLong, formatDuration, minutesBetween } from '@/utils/date';
+import {
+  formatDateLong,
+  formatDuration,
+  formatMonthYear,
+  minutesBetween,
+  parseISODate,
+} from '@/utils/date';
 
 import { SessionHistorySheet } from './SessionHistorySheet';
 
@@ -20,8 +26,26 @@ export function TrainingLobbyScreen() {
   const gyms = useStore((s) => s.gyms);
 
   const [detail, setDetail] = useState<TrainingSession | null>(null);
+  const [histMonth, setHistMonth] = useState(() => {
+    const latest = finishedSessions(sessions)[0];
+    const d = latest ? parseISODate(latest.date) : new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
 
   const history = useMemo(() => finishedSessions(sessions), [sessions]);
+  const monthHistory = useMemo(
+    () =>
+      history.filter((s) => {
+        const d = parseISODate(s.date);
+        return d.getFullYear() === histMonth.year && d.getMonth() === histMonth.month;
+      }),
+    [history, histMonth],
+  );
+  const stepMonth = (delta: number) =>
+    setHistMonth((m) => {
+      const d = new Date(m.year, m.month + delta, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
   const gymName = (id: string) => gyms.find((g) => g.id === id)?.name ?? 'Ginásio';
 
   return (
@@ -68,7 +92,24 @@ export function TrainingLobbyScreen() {
       {/* history */}
       <View>
         <SectionLabel>Histórico</SectionLabel>
-        {history.length === 0 ? (
+
+        {/* month navigator */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 12,
+          }}
+        >
+          <MonthNav icon="back" onPress={() => stepMonth(-1)} />
+          <Text style={{ fontFamily: fonts.display600, fontSize: 16, color: colors.text }}>
+            {formatMonthYear(histMonth.year, histMonth.month)}
+          </Text>
+          <MonthNav icon="chevron" onPress={() => stepMonth(1)} />
+        </View>
+
+        {monthHistory.length === 0 ? (
           <View
             style={{
               alignItems: 'center',
@@ -84,12 +125,12 @@ export function TrainingLobbyScreen() {
           >
             <Icon name="history" size={26} color={colors.textFaint} />
             <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
-              Nenhum treino finalizado ainda.
+              Nenhum treino em {formatMonthYear(histMonth.year, histMonth.month)}.
             </Text>
           </View>
         ) : (
           <View style={{ gap: 10 }}>
-            {history.map((s) => {
+            {monthHistory.map((s) => {
               const present = s.rosterIds.length - s.noShowIds.length;
               return (
                 <Pressable
@@ -144,5 +185,27 @@ export function TrainingLobbyScreen() {
 
       <SessionHistorySheet session={detail} onClose={() => setDetail(null)} />
     </Screen>
+  );
+}
+
+function MonthNav({ icon, onPress }: { icon: 'back' | 'chevron'; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        backgroundColor: colors.surfaceMuted,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Icon name={icon} size={18} color={colors.textMuted} />
+    </Pressable>
   );
 }
