@@ -20,6 +20,7 @@ import type {
   TableSide,
   TableTypes,
   TimerState,
+  TrainingSession,
 } from '@/models/types';
 import { uid } from '@/utils/text';
 
@@ -47,6 +48,24 @@ const generateTables = (count: number, cols: number): TableModel[] =>
     gx: i % cols,
     gy: Math.floor(i / cols),
   }));
+
+/** Empty every seat on the tables belonging to the given courts. */
+const clearCourtsAssignments = (assignments: Assignments, courts: Court[]): Assignments => {
+  const tableIds = new Set(courts.flatMap((c) => c.tables.map((t) => t.id)));
+  if (tableIds.size === 0) return assignments;
+  const next: Assignments = {};
+  for (const [tid, a] of Object.entries(assignments)) {
+    next[tid] = tableIds.has(tid) ? emptyAssignment() : a;
+  }
+  return next;
+};
+
+/** Empty every seat across all courts of a gym. */
+const clearGymAssignments = (assignments: Assignments, courts: Court[], gymId: string): Assignments =>
+  clearCourtsAssignments(
+    assignments,
+    courts.filter((c) => c.gymId === gymId),
+  );
 
 /** Remove a player from every seat (both sides of every table). */
 const withoutPlayer = (assignments: Assignments, playerId: string): Assignments => {
@@ -88,6 +107,9 @@ export interface AppState {
   assignments: Assignments;
   tableFormats: TableFormats;
   tableTypes: TableTypes;
+  // training sessions (Treinos) — history + the one currently active
+  sessions: TrainingSession[];
+  activeSessionId: string | null;
   // training timer (not persisted)
   timer: TimerState;
   // preferences
@@ -109,7 +131,8 @@ export interface AppState {
   setSelectedGymId: (id: string) => void;
 
   // ── Players ────────────────────────────────────────────
-  addPlayer: (data: Omit<Player, 'id'>) => void;
+  /** Create a player and return its new id. */
+  addPlayer: (data: Omit<Player, 'id'>) => string;
   updatePlayer: (id: string, data: Partial<Omit<Player, 'id'>>) => void;
   deletePlayer: (id: string) => void;
 
@@ -124,6 +147,35 @@ export interface AppState {
   setTableFormat: (tableId: string, format: TableFormat) => void;
   /** Set the free-text training type tag for a table (empty clears it). */
   setTableType: (tableId: string, type: string) => void;
+
+  // ── Training sessions (Treinos) ────────────────────────
+  /**
+   * Create + activate a gym-scoped session; clears every court of the gym and
+   * sets `initialCourtId` (or the gym's first court) as the viewed court.
+   */
+  startSession: (input: {
+    gymId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    rosterIds: string[];
+    /** Court to view first (not stored on the session). */
+    initialCourtId?: string | null;
+  }) => void;
+  /** Finalize the active session into history. */
+  finishSession: () => void;
+  /** Discard the active session (not kept in history). */
+  cancelSession: () => void;
+  /** Quick-add a player to the active session's roster. */
+  addToRoster: (playerId: string) => void;
+  /** Remove a player from the active session entirely (roster + no-show + seats). */
+  removeFromRoster: (playerId: string) => void;
+  /** Mark a roster player as "Não veio" (absent), unseating them. */
+  markNoShow: (playerId: string) => void;
+  /** Undo a no-show, sending the player back to the bench. */
+  unmarkNoShow: (playerId: string) => void;
+  /** Delete a session from history (or the active one). */
+  deleteSession: (id: string) => void;
 
   // ── Timer ──────────────────────────────────────────────
   tickTimer: () => void;
@@ -145,6 +197,8 @@ export const useStore = create<AppState>()(
       assignments: SEED_ASSIGNMENTS,
       tableFormats: SEED_TABLE_FORMATS,
       tableTypes: SEED_TABLE_TYPES,
+      sessions: [],
+      activeSessionId: null,
       timer: { seconds: 0, running: false },
       settings: DEFAULT_SETTINGS,
 
@@ -255,13 +309,13 @@ export const useStore = create<AppState>()(
       setActiveCourtId: (id) => set({ activeCourtId: id }),
       setSelectedGymId: (id) => set({ selectedGymId: id }),
 
-      addPlayer: (data) =>
+      addPlayer: (data) => {
+        const id = uid('p');
         set((s) => ({
-          players: [
-            ...s.players,
-            { id: uid('p'), ...data, name: data.name.trim() || 'Novo jogador' },
-          ],
-        })),
+          players: [...s.players, { id, ...data, name: data.name.trim() || 'Novo jogador' }],
+        }));
+        return id;
+      },
 
       updatePlayer: (id, data) =>
         set((s) => ({
@@ -274,6 +328,11 @@ export const useStore = create<AppState>()(
         set((s) => ({
           players: s.players.filter((p) => p.id !== id),
           assignments: withoutPlayer(s.assignments, id),
+          sessions: s.sessions.map((ses) => ({
+            ...ses,
+            rosterIds: ses.rosterIds.filter((pid) => pid !== id),
+            noShowIds: ses.noShowIds.filter((pid) => pid !== id),
+          })),
         })),
 
       placePlayer: (playerId, tableId, side) =>
@@ -332,6 +391,125 @@ export const useStore = create<AppState>()(
           return { tableTypes: next };
         }),
 
+      // ── Training sessions ──────────────────────────────────
+      startSession: ({ gymId, date, startTime, endTime, rosterIds, initialCourtId }) =>
+        set((s) => {
+          const session: TrainingSession = {
+            id: uid('ses'),
+            gymId,
+            date,
+            startTime,
+            endTime,
+            rosterIds: [...rosterIds],
+            noShowIds: [],
+            status: 'active',
+            startedAt: Date.now(),
+          };
+          const gymCourts = s.courts.filter((c) => c.gymId === gymId);
+          const viewed = gymCourts.find((c) => c.id === initialCourtId)?.id ?? gymCourts[0]?.id ?? null;
+          return {
+            sessions: [...s.sessions, session],
+            activeSessionId: session.id,
+            activeCourtId: viewed,
+            assignments: clearGymAssignments(s.assignments, s.courts, gymId),
+          };
+        }),
+
+      finishSession: () =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          const active = s.sessions.find((ses) => ses.id === s.activeSessionId);
+          return {
+            sessions: s.sessions.map((ses) =>
+              ses.id === s.activeSessionId
+                ? { ...ses, status: 'finished' as const, finishedAt: Date.now() }
+                : ses,
+            ),
+            activeSessionId: null,
+            assignments: active
+              ? clearGymAssignments(s.assignments, s.courts, active.gymId)
+              : s.assignments,
+          };
+        }),
+
+      cancelSession: () =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          const active = s.sessions.find((ses) => ses.id === s.activeSessionId);
+          return {
+            sessions: s.sessions.filter((ses) => ses.id !== s.activeSessionId),
+            activeSessionId: null,
+            assignments: active
+              ? clearGymAssignments(s.assignments, s.courts, active.gymId)
+              : s.assignments,
+          };
+        }),
+
+      addToRoster: (playerId) =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          return {
+            sessions: s.sessions.map((ses) =>
+              ses.id === s.activeSessionId && !ses.rosterIds.includes(playerId)
+                ? { ...ses, rosterIds: [...ses.rosterIds, playerId] }
+                : ses,
+            ),
+          };
+        }),
+
+      removeFromRoster: (playerId) =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          return {
+            sessions: s.sessions.map((ses) =>
+              ses.id === s.activeSessionId
+                ? {
+                    ...ses,
+                    rosterIds: ses.rosterIds.filter((id) => id !== playerId),
+                    noShowIds: ses.noShowIds.filter((id) => id !== playerId),
+                  }
+                : ses,
+            ),
+            assignments: withoutPlayer(s.assignments, playerId),
+          };
+        }),
+
+      markNoShow: (playerId) =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          return {
+            sessions: s.sessions.map((ses) => {
+              if (ses.id !== s.activeSessionId) return ses;
+              const rosterIds = ses.rosterIds.includes(playerId)
+                ? ses.rosterIds
+                : [...ses.rosterIds, playerId];
+              const noShowIds = ses.noShowIds.includes(playerId)
+                ? ses.noShowIds
+                : [...ses.noShowIds, playerId];
+              return { ...ses, rosterIds, noShowIds };
+            }),
+            assignments: withoutPlayer(s.assignments, playerId),
+          };
+        }),
+
+      unmarkNoShow: (playerId) =>
+        set((s) => {
+          if (!s.activeSessionId) return s;
+          return {
+            sessions: s.sessions.map((ses) =>
+              ses.id === s.activeSessionId
+                ? { ...ses, noShowIds: ses.noShowIds.filter((id) => id !== playerId) }
+                : ses,
+            ),
+          };
+        }),
+
+      deleteSession: (id) =>
+        set((s) => ({
+          sessions: s.sessions.filter((ses) => ses.id !== id),
+          activeSessionId: s.activeSessionId === id ? null : s.activeSessionId,
+        })),
+
       tickTimer: () => set((s) => ({ timer: { ...s.timer, seconds: s.timer.seconds + 1 } })),
       toggleTimer: () => set((s) => ({ timer: { ...s.timer, running: !s.timer.running } })),
       resetTimer: () => set({ timer: { seconds: 0, running: false } }),
@@ -340,13 +518,18 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'tt-trainer-state-v1',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => AsyncStorage),
       // v2: players gained a `weekdays` field (Frequência). Backfill it as empty.
+      // v3: training sessions (Treinos) were added. Backfill empty.
       migrate: (persisted, version) => {
         const state = persisted as Partial<AppState> | undefined;
         if (state?.players && version < 2) {
           state.players = state.players.map((p) => ({ ...p, weekdays: p.weekdays ?? [] }));
+        }
+        if (state && version < 3) {
+          state.sessions = state.sessions ?? [];
+          state.activeSessionId = state.activeSessionId ?? null;
         }
         return state as AppState;
       },
@@ -359,6 +542,8 @@ export const useStore = create<AppState>()(
         assignments: s.assignments,
         tableFormats: s.tableFormats,
         tableTypes: s.tableTypes,
+        sessions: s.sessions,
+        activeSessionId: s.activeSessionId,
         settings: s.settings,
       }),
     },

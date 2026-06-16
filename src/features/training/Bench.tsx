@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, type SharedValue } from 'react-native-reanimated';
 
@@ -23,6 +23,8 @@ interface BenchProps extends DragCallbacks {
   onTapChip: (player: Player) => void;
   ghostX: SharedValue<number>;
   ghostY: SharedValue<number>;
+  /** Optional quick-add affordance shown in the header. */
+  onQuickAdd?: () => void;
 }
 
 export function Bench({
@@ -33,6 +35,7 @@ export function Bench({
   onTapChip,
   ghostX,
   ghostY,
+  onQuickAdd,
   ...drag
 }: BenchProps) {
   const { colors, fonts } = useTheme();
@@ -69,7 +72,26 @@ export function Bench({
             </Text>
           </View>
         </View>
-        <Text style={{ fontFamily: fonts.ui500, fontSize: 11, color: colors.textFaint }}>{hint}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontFamily: fonts.ui500, fontSize: 11, color: colors.textFaint }}>{hint}</Text>
+          {onQuickAdd && (
+            <Pressable
+              onPress={onQuickAdd}
+              hitSlop={8}
+              accessibilityLabel="Adicionar jogador"
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                backgroundColor: colors.primarySoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="plus" size={18} color={colors.primary} />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {players.length === 0 ? (

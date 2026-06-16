@@ -7,13 +7,17 @@ import {
   Armchair,
   ArrowLeftRight,
   Bell,
+  CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
   Circle,
+  Clock,
+  History,
   Home,
   Info,
   LayoutGrid,
+  Minus,
   Pause,
   Pencil,
   Play,
@@ -24,6 +28,8 @@ import {
   Settings,
   Timer,
   Trash2,
+  UserMinus,
+  UserPlus,
   Users,
   X,
 } from 'lucide-react-native';
@@ -92,7 +98,13 @@ export type IconName =
   | 'bench'
   | 'bell'
   | 'info'
-  | 'dot';
+  | 'dot'
+  | 'calendar'
+  | 'clock'
+  | 'history'
+  | 'minus'
+  | 'userPlus'
+  | 'userMinus';
 
 export const Icons: Record<IconName, ComponentType<IconProps>> = {
   home: Home,
@@ -119,6 +131,12 @@ export const Icons: Record<IconName, ComponentType<IconProps>> = {
   info: Info,
   dot: Circle,
   gym: School,
+  calendar: CalendarDays,
+  clock: Clock,
+  history: History,
+  minus: Minus,
+  userPlus: UserPlus,
+  userMinus: UserMinus,
 };
 
 export function Icon({

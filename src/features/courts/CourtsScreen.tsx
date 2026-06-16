@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 
 import { Button, Screen } from '@/components';
 import type { Court } from '@/models/types';
+import { getActiveSession } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { useTheme } from '@/theme';
 
@@ -18,6 +19,7 @@ export function CourtsScreen() {
   const gyms = useStore((s) => s.gyms);
   const courts = useStore((s) => s.courts);
   const activeCourtId = useStore((s) => s.activeCourtId);
+  const activeSession = useStore(getActiveSession);
   const selectedGymId = useStore((s) => s.selectedGymId);
   const setSelectedGymId = useStore((s) => s.setSelectedGymId);
   const setActiveCourtId = useStore((s) => s.setActiveCourtId);
@@ -181,7 +183,9 @@ export function CourtsScreen() {
                       <Button
                         icon="play"
                         size="sm"
-                        onPress={() => router.navigate('/(tabs)/training')}
+                        onPress={() =>
+                          router.navigate(activeSession ? '/(tabs)/training' : '/session-setup')
+                        }
                       >
                         Treinar
                       </Button>

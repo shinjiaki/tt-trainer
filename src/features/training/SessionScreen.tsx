@@ -1,19 +1,21 @@
 import { useRouter } from 'expo-router';
-import { type ComponentRef, useMemo, useRef, useState } from 'react';
+import { type ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, BottomSheet, Button } from '@/components';
-import { WEEKDAYS } from '@/features/players/constants';
+import { PlayerSheet } from '@/features/players/PlayerSheet';
 import { Icon } from '@/icons';
-import type { Player, TableModel, TableSide, Weekday } from '@/models/types';
-import { assignedIdSet } from '@/store/selectors';
+import type { Court, Player, TableModel, TableSide } from '@/models/types';
+import { getActiveSession, sessionRosterPresent } from '@/store/selectors';
 import { useStore } from '@/store/useStore';
 import { useTheme } from '@/theme';
 
 import { Bench } from './Bench';
 import { ManageTableSheet } from './ManageTableSheet';
+import { NoShowBar } from './NoShowBar';
+import { PlayerPickerSheet } from './PlayerPickerSheet';
 import { TableTop } from './TableTop';
 import { TimerBar } from './TimerBar';
 
@@ -30,7 +32,14 @@ interface ZoneRect extends Omit<ZoneEntry, 'node'> {
   h: number;
 }
 
-export function TrainingScreen() {
+/** Players seated across the given court's tables. */
+const courtSeatedCount = (court: Court, assignments: Record<string, { coach: string[]; players: string[] }>) =>
+  court.tables.reduce((n, t) => {
+    const a = assignments[t.id];
+    return n + (a ? a.coach.length + a.players.length : 0);
+  }, 0);
+
+export function SessionScreen() {
   const { colors, fonts } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -41,7 +50,9 @@ export function TrainingScreen() {
   const assignments = useStore((s) => s.assignments);
   const tableFormats = useStore((s) => s.tableFormats);
   const tableTypes = useStore((s) => s.tableTypes);
+  const session = useStore(getActiveSession);
   const activeCourtId = useStore((s) => s.activeCourtId);
+  const setActiveCourtId = useStore((s) => s.setActiveCourtId);
   const moveMode = useStore((s) => s.settings.moveMode);
   const layout = useStore((s) => s.settings.trainingLayout);
   const placePlayer = useStore((s) => s.placePlayer);
@@ -50,35 +61,56 @@ export function TrainingScreen() {
   const setTableFormat = useStore((s) => s.setTableFormat);
   const setTableType = useStore((s) => s.setTableType);
   const renameTable = useStore((s) => s.renameTable);
+  const finishSession = useStore((s) => s.finishSession);
+  const cancelSession = useStore((s) => s.cancelSession);
+  const addToRoster = useStore((s) => s.addToRoster);
+  const markNoShow = useStore((s) => s.markNoShow);
+  const unmarkNoShow = useStore((s) => s.unmarkNoShow);
+  const addPlayer = useStore((s) => s.addPlayer);
 
-  // Optional weekday filter: narrow players to those who train on the chosen day.
-  const [dayFilter, setDayFilter] = useState<Weekday | null>(null);
-
-  const court = courts.find((c) => c.id === activeCourtId) ?? null;
-  const gym = gyms.find((g) => g.id === court?.gymId) ?? null;
-  const gymPlayers = useMemo(
-    () =>
-      gym
-        ? players.filter(
-            (p) =>
-              p.gymIds.includes(gym.id) &&
-              (dayFilter === null || (p.weekdays ?? []).includes(dayFilter)),
-          )
-        : [],
-    [players, gym, dayFilter],
+  const gym = gyms.find((g) => g.id === session?.gymId) ?? null;
+  const gymCourts = useMemo(
+    () => (session ? courts.filter((c) => c.gymId === session.gymId) : []),
+    [courts, session],
   );
+  // The court currently on screen — driven by activeCourtId, scoped to the gym.
+  const viewedCourt = gymCourts.find((c) => c.id === activeCourtId) ?? gymCourts[0] ?? null;
+
   const byId = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const resolve = (ids: string[]): Player[] =>
     ids.map((id) => byId.get(id)).filter((p): p is Player => Boolean(p));
 
-  const assignedSet = assignedIdSet(assignments);
-  const bench = gymPlayers.filter((p) => !assignedSet.has(p.id));
-  const placed = gymPlayers.filter((p) => assignedSet.has(p.id)).length;
+  const presentPlayers = resolve(sessionRosterPresent(session));
+  const noShowPlayers = resolve(session?.noShowIds ?? []);
+  const candidatesToAdd = players.filter((p) => !(session?.rosterIds ?? []).includes(p.id));
+
+  // Players seated on ANY court of the gym (courts are shared in a session).
+  const seatedAnywhere = useMemo(() => {
+    const set = new Set<string>();
+    gymCourts.forEach((c) =>
+      c.tables.forEach((t) => {
+        const a = assignments[t.id];
+        if (a) {
+          a.coach.forEach((id) => set.add(id));
+          a.players.forEach((id) => set.add(id));
+        }
+      }),
+    );
+    return set;
+  }, [gymCourts, assignments]);
+
+  const bench = presentPlayers.filter((p) => !seatedAnywhere.has(p.id));
+  const placed = presentPlayers.length - bench.length;
+  const viewedPlaced = viewedCourt ? courtSeatedCount(viewedCourt, assignments) : 0;
 
   // ── interaction state ──────────────────────────────────
   const [selBench, setSelBench] = useState<string | null>(null);
   const [sheetTable, setSheetTable] = useState<TableModel | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmFinish, setConfirmFinish] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [noShowOpen, setNoShowOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const draggingIdRef = useRef<string | null>(null);
@@ -149,28 +181,42 @@ export function TrainingScreen() {
   const ghostX = useSharedValue(0);
   const ghostY = useSharedValue(0);
   const ghostStyle = useAnimatedStyle(() => ({
-    // Lift the avatar above the fingertip so the dragged name isn't hidden by the finger.
     transform: [{ translateX: ghostX.value - 23 }, { translateY: ghostY.value - 66 }],
   }));
   const ghostPlayer = draggingId ? byId.get(draggingId) : null;
 
-  const cols = layout === 'list' ? 1 : (court?.cols ?? 2);
+  const cols = layout === 'list' ? 1 : (viewedCourt?.cols ?? 2);
   const selectedPlayer = selBench ? byId.get(selBench) : null;
-  // Use the live table from the store so a rename reflects immediately in the open sheet.
   const liveSheetTable = sheetTable
-    ? (court?.tables.find((t) => t.id === sheetTable.id) ?? sheetTable)
+    ? (viewedCourt?.tables.find((t) => t.id === sheetTable.id) ?? sheetTable)
     : null;
 
-  if (!court) {
+  // Keep activeCourtId pointing at a valid court of the gym.
+  useEffect(() => {
+    if (session && viewedCourt && viewedCourt.id !== activeCourtId) {
+      setActiveCourtId(viewedCourt.id);
+    }
+  }, [session, viewedCourt, activeCourtId, setActiveCourtId]);
+
+  // No active session → the Treino tab renders the lobby instead.
+  if (!session) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  }
+
+  // Active session but the gym has no courts (all deleted mid-session).
+  if (!viewedCourt) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 }}>
         <Icon name="court" size={32} color={colors.textFaint} />
-        <Text style={{ fontFamily: fonts.ui600, fontSize: 16, color: colors.text }}>
-          Nenhuma quadra ativa
+        <Text style={{ fontFamily: fonts.ui600, fontSize: 16, color: colors.text, textAlign: 'center' }}>
+          {gym?.name ?? 'Ginásio'} não tem quadras
         </Text>
-        <Pressable onPress={() => router.navigate('/(tabs)/courts')}>
-          <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.primary }}>
-            Escolher quadra
+        <Button variant="soft" icon="court" onPress={() => router.navigate('/(tabs)/courts')}>
+          Cadastrar quadra
+        </Button>
+        <Pressable onPress={() => finishSession()} style={{ padding: 8 }}>
+          <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.danger }}>
+            Finalizar treino
           </Text>
         </Pressable>
       </View>
@@ -180,11 +226,13 @@ export function TrainingScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* header */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              {gym && <View style={{ width: 8, height: 8, borderRadius: 3, backgroundColor: gym.color }} />}
+              {gym && (
+                <View style={{ width: 8, height: 8, borderRadius: 3, backgroundColor: gym.color }} />
+              )}
               <Text
                 style={{
                   fontFamily: fonts.ui700,
@@ -197,57 +245,67 @@ export function TrainingScreen() {
                 {gym?.name ?? 'Treino'}
               </Text>
             </View>
-            <Pressable
-              onPress={() => router.navigate('/(tabs)/courts')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Text style={{ fontFamily: fonts.display600, fontSize: 22, color: colors.text }}>
-                {court.name}
-              </Text>
-              <Icon name="chevron" size={17} color={colors.textFaint} />
-            </Pressable>
+            <Text style={{ fontFamily: fonts.display600, fontSize: 21, color: colors.text }}>
+              {viewedCourt.name}
+            </Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {placed > 0 && (
-              <Pressable
-                onPress={() => setConfirmClear(true)}
-                hitSlop={8}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
-              >
-                <Icon name="bench" size={18} color={colors.textMuted} />
-                <Text style={{ fontFamily: fonts.ui600, fontSize: 13, color: colors.textMuted }}>
-                  Esvaziar
-                </Text>
-              </Pressable>
-            )}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-              <Icon name="players" size={18} color={colors.textMuted} />
-              <Text style={{ fontFamily: fonts.mono700, fontSize: 15, color: colors.textMuted }}>
-                {placed}
-                <Text style={{ color: colors.textFaint }}>/{gymPlayers.length}</Text>
-              </Text>
-            </View>
-          </View>
+          <Button variant="soft" size="sm" icon="check" onPress={() => setConfirmFinish(true)}>
+            Finalizar
+          </Button>
         </View>
+
         <TimerBar />
 
-        {/* weekday filter — optional, narrows players to one training day */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 7, paddingTop: 10, paddingBottom: 2 }}
-          style={{ marginHorizontal: -2 }}
+        {/* counts + clear */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: 10,
+            paddingHorizontal: 4,
+          }}
         >
-          <DayChip label="Todos" active={dayFilter === null} onPress={() => setDayFilter(null)} />
-          {WEEKDAYS.map((d) => (
-            <DayChip
-              key={d.value}
-              label={d.short}
-              active={dayFilter === d.value}
-              onPress={() => setDayFilter((cur) => (cur === d.value ? null : d.value))}
-            />
-          ))}
-        </ScrollView>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <Icon name="players" size={18} color={colors.textMuted} />
+            <Text style={{ fontFamily: fonts.mono700, fontSize: 15, color: colors.textMuted }}>
+              {placed}
+              <Text style={{ color: colors.textFaint }}>/{presentPlayers.length} em jogo</Text>
+            </Text>
+          </View>
+          {viewedPlaced > 0 && (
+            <Pressable
+              onPress={() => setConfirmClear(true)}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+            >
+              <Icon name="bench" size={18} color={colors.textMuted} />
+              <Text style={{ fontFamily: fonts.ui600, fontSize: 13, color: colors.textMuted }}>
+                Esvaziar
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* court switcher — only when the gym has more than one court */}
+        {gymCourts.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingTop: 10, paddingBottom: 2 }}
+            style={{ marginHorizontal: -2 }}
+          >
+            {gymCourts.map((c) => (
+              <CourtChip
+                key={c.id}
+                name={c.name}
+                seated={courtSeatedCount(c, assignments)}
+                active={c.id === viewedCourt.id}
+                onPress={() => setActiveCourtId(c.id)}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       {/* canvas */}
@@ -257,7 +315,7 @@ export function TrainingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 12 }}>
-          {chunk(court.tables, cols).map((row, ri) => (
+          {chunk(viewedCourt.tables, cols).map((row, ri) => (
             <View key={ri} style={{ flexDirection: 'row', gap: 12 }}>
               {row.map((t) => {
                 const a = assignments[t.id] ?? { coach: [], players: [] };
@@ -284,7 +342,6 @@ export function TrainingScreen() {
                   </View>
                 );
               })}
-              {/* keep last partial row aligned */}
               {row.length < cols &&
                 Array.from({ length: cols - row.length }).map((_, i) => (
                   <View key={`spacer-${i}`} style={{ flex: 1 }} />
@@ -303,6 +360,13 @@ export function TrainingScreen() {
         )}
       </ScrollView>
 
+      {/* no-show strip */}
+      <NoShowBar
+        players={noShowPlayers}
+        onAdd={() => setNoShowOpen(true)}
+        onRemove={(id) => unmarkNoShow(id)}
+      />
+
       {/* bench */}
       <Bench
         players={bench}
@@ -310,6 +374,7 @@ export function TrainingScreen() {
         selectedId={selBench}
         draggingId={draggingId}
         onTapChip={onTapChip}
+        onQuickAdd={() => setAddOpen(true)}
         ghostX={ghostX}
         ghostY={ghostY}
         onDragStart={onDragStart}
@@ -329,9 +394,9 @@ export function TrainingScreen() {
       )}
 
       {/* confirm clear tables */}
-      <BottomSheet open={confirmClear} onClose={() => setConfirmClear(false)} title="Esvaziar mesas?">
+      <BottomSheet open={confirmClear} onClose={() => setConfirmClear(false)} title={`Esvaziar ${viewedCourt.name}?`}>
         <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, lineHeight: 20, marginBottom: 18 }}>
-          Todos os {placed} jogadores em mesa voltarão para o banco. Os formatos e nomes das mesas são mantidos.
+          Os {viewedPlaced} jogadores em {viewedCourt.name} voltarão para o banco. Os formatos e nomes das mesas são mantidos.
         </Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Button variant="ghost" full style={{ flex: 1 }} onPress={() => setConfirmClear(false)}>
@@ -343,7 +408,7 @@ export function TrainingScreen() {
             full
             style={{ flex: 1 }}
             onPress={() => {
-              clearCourtTables(court.id);
+              clearCourtTables(viewedCourt.id);
               setConfirmClear(false);
             }}
           >
@@ -351,6 +416,84 @@ export function TrainingScreen() {
           </Button>
         </View>
       </BottomSheet>
+
+      {/* confirm finish */}
+      <BottomSheet open={confirmFinish} onClose={() => setConfirmFinish(false)} title="Finalizar treino?">
+        <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, lineHeight: 20, marginBottom: 18 }}>
+          {presentPlayers.length} {presentPlayers.length === 1 ? 'presença' : 'presenças'}
+          {noShowPlayers.length > 0
+            ? ` e ${noShowPlayers.length} ${noShowPlayers.length === 1 ? 'falta' : 'faltas'}`
+            : ''}{' '}
+          serão registrados no histórico.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Button variant="ghost" full style={{ flex: 1 }} onPress={() => setConfirmFinish(false)}>
+            Cancelar
+          </Button>
+          <Button
+            icon="check"
+            full
+            style={{ flex: 1 }}
+            onPress={() => {
+              setConfirmFinish(false);
+              finishSession();
+            }}
+          >
+            Finalizar
+          </Button>
+        </View>
+        <Pressable
+          onPress={() => {
+            setConfirmFinish(false);
+            cancelSession();
+          }}
+          style={{ alignSelf: 'center', padding: 10, marginTop: 6 }}
+        >
+          <Text style={{ color: colors.danger, fontFamily: fonts.ui600, fontSize: 13.5 }}>
+            Descartar treino
+          </Text>
+        </Pressable>
+      </BottomSheet>
+
+      {/* quick-add to roster */}
+      <PlayerPickerSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Adicionar jogador"
+        players={candidatesToAdd}
+        emptyText="Todos os jogadores já estão no treino."
+        search
+        onPick={(id) => addToRoster(id)}
+        onCreateNew={() => {
+          setAddOpen(false);
+          setCreating(true);
+        }}
+      />
+
+      {/* mark no-show */}
+      <PlayerPickerSheet
+        open={noShowOpen}
+        onClose={() => setNoShowOpen(false)}
+        title="Quem não veio?"
+        players={presentPlayers}
+        emptyText="Ninguém disponível para marcar falta."
+        onPick={(id) => markNoShow(id)}
+        actionIcon="userMinus"
+        actionTone="danger"
+      />
+
+      {/* create a brand-new player, then add to roster */}
+      <PlayerSheet
+        editing={creating ? 'new' : null}
+        gyms={gyms}
+        onClose={() => setCreating(false)}
+        onSave={(draft) => {
+          const id = addPlayer(draft);
+          addToRoster(id);
+          setCreating(false);
+        }}
+        onDelete={() => setCreating(false)}
+      />
 
       {/* manage table sheet */}
       <ManageTableSheet
@@ -371,13 +514,15 @@ export function TrainingScreen() {
   );
 }
 
-/** Compact pill used by the weekday filter row. */
-function DayChip({
-  label,
+/** Pill in the court switcher showing the court name + seated count. */
+function CourtChip({
+  name,
+  seated,
   active,
   onPress,
 }: {
-  label: string;
+  name: string;
+  seated: number;
   active: boolean;
   onPress: () => void;
 }) {
@@ -386,6 +531,9 @@ function DayChip({
     <Pressable
       onPress={onPress}
       style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
         backgroundColor: active ? colors.primary : colors.surfaceMuted,
         borderWidth: 1,
         borderColor: active ? colors.primary : colors.border,
@@ -394,11 +542,27 @@ function DayChip({
         paddingHorizontal: 13,
       }}
     >
-      <Text
-        style={{ fontFamily: fonts.ui600, fontSize: 13, color: active ? '#fff' : colors.textMuted }}
-      >
-        {label}
+      <Icon name="court" size={14} color={active ? '#fff' : colors.textMuted} />
+      <Text style={{ fontFamily: fonts.ui600, fontSize: 13, color: active ? '#fff' : colors.text }}>
+        {name}
       </Text>
+      <View
+        style={{
+          minWidth: 18,
+          height: 18,
+          paddingHorizontal: 5,
+          borderRadius: 9,
+          backgroundColor: active ? 'rgba(255,255,255,0.22)' : colors.surface,
+          borderWidth: active ? 0 : 1,
+          borderColor: colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontFamily: fonts.mono700, fontSize: 11, color: active ? '#fff' : colors.textMuted }}>
+          {seated}
+        </Text>
+      </View>
     </Pressable>
   );
 }

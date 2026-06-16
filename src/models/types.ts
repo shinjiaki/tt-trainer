@@ -112,3 +112,33 @@ export interface TimerState {
   seconds: number;
   running: boolean;
 }
+
+/** Lifecycle of a training session (Treino). */
+export type SessionStatus = 'active' | 'finished';
+
+/**
+ * §3.8 Training session (Treino) — a dated class with a chosen roster.
+ * Started from the setup screen, run live, then finalized into history.
+ * A session is bound to a gym, NOT a court: it can span several courts of the
+ * gym at once, and the coach switches the viewed court freely during training.
+ * Attendance (presença) is derived from finished sessions:
+ *   present = rosterIds − noShowIds · absent = noShowIds.
+ */
+export interface TrainingSession {
+  id: string;
+  gymId: string;
+  /** Local day of the training, 'YYYY-MM-DD'. */
+  date: string;
+  /** Planned start/end, 'HH:MM'. */
+  startTime: string;
+  endTime: string;
+  /** Players selected for the session. */
+  rosterIds: string[];
+  /** Players marked "Não veio" (absent) — always a subset of rosterIds. */
+  noShowIds: string[];
+  status: SessionStatus;
+  /** epoch ms when started. */
+  startedAt: number;
+  /** epoch ms when finalized (absent while active). */
+  finishedAt?: number;
+}
