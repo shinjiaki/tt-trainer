@@ -164,7 +164,7 @@ export function SettingsScreen() {
       <View>
         <SectionLabel>Treino</SectionLabel>
         <Group>
-          <Row
+          {/* <Row
             icon="timer"
             title="Duração do jogo"
             sub="Tempo sugerido por rodada (Not working)"
@@ -178,8 +178,8 @@ export function SettingsScreen() {
                 unit="min"
               />
             }
-          />
-          <Row
+          /> */}
+          {/* <Row
             icon="bell"
             title="Alerta de rodízio"
             sub="Som ao fim do tempo do jogo (Not working)"
@@ -189,8 +189,8 @@ export function SettingsScreen() {
                 onChange={(v) => updateSettings({ rotationAlert: v })}
               />
             }
-          />
-          <Row
+          /> */}
+          {/* <Row
             icon="paddle"
             title="Manter tela ligada"
             sub="Durante o treino ativo (Not working)"
@@ -200,7 +200,7 @@ export function SettingsScreen() {
                 onChange={(v) => updateSettings({ keepScreenAwake: v })}
               />
             }
-          />
+          /> */}
           <View style={{ padding: 14, gap: 10 }}>
             <Text style={{ fontFamily: fonts.ui600, fontSize: 14.5, color: colors.text }}>
               Layout das mesas
@@ -245,12 +245,12 @@ export function SettingsScreen() {
               />
             }
           />
-          <Row
+          {/* <Row
             icon="dot"
             title="Idioma"
             sub="Português (Brasil)"
             right={<Icon name="chevron" size={18} color={colors.textFaint} />}
-          />
+          /> */}
           <Row
             icon="info"
             title="Sobre o app"
