@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
 import {
   BottomSheet,
@@ -291,18 +291,10 @@ export function SettingsScreen() {
         <View style={{ gap: 22, paddingTop: 4 }}>
           {/* app identity */}
           <View style={{ alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 20,
-                backgroundColor: colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name="paddle" size={38} color="#fff" />
-            </View>
+            <Image
+              source={require('../../../assets/images/icon.png')}
+              style={{ width: 72, height: 72, borderRadius: 20 }}
+            />
             <View style={{ alignItems: 'center', gap: 3 }}>
               <Text style={{ fontFamily: fonts.display700, fontSize: 22, color: colors.text }}>
                 TT Trainer
@@ -348,6 +340,7 @@ export function SettingsScreen() {
                 borderColor: colors.border,
                 borderRadius: 16,
                 padding: 14,
+                marginBottom: 12,
               }}
             >
               <View
@@ -355,7 +348,7 @@ export function SettingsScreen() {
                   width: 46,
                   height: 46,
                   borderRadius: 14,
-                  backgroundColor: colors.accent,
+                  backgroundColor: colors.primaryDim,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -370,6 +363,41 @@ export function SettingsScreen() {
                 </Text>
                 <Text style={{ fontFamily: fonts.ui400, fontSize: 12.5, color: colors.textMuted }}>
                   Design & desenvolvimento
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 13,
+                backgroundColor: colors.surfaceMuted,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 16,
+                padding: 14,
+              }}
+            >
+              <View
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 14,
+                  backgroundColor: colors.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontFamily: fonts.display700, fontSize: 17, color: '#fff' }}>
+                  Hy
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: fonts.display600, fontSize: 16, color: colors.text }}>
+                  Haumy
+                </Text>
+                <Text style={{ fontFamily: fonts.ui400, fontSize: 12.5, color: colors.textMuted }}>
+                  QA, PO, UI/UX e Creative Director
                 </Text>
               </View>
             </View>
