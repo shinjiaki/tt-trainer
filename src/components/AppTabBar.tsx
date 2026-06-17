@@ -66,7 +66,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               style={{
                 width: 56,
                 height: 30,
-                borderRadius: 999,
+                // Use exactly half the height instead of 999: large radii
+                // intermittently rasterize as square corners on Android (MIUI/Xiaomi).
+                borderRadius: 15,
+                overflow: 'hidden',
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: pillBg,
