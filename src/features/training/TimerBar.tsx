@@ -311,7 +311,7 @@ export function TimerBar() {
           style={{ alignItems: 'center', paddingVertical: 14, marginTop: 6 }}
         >
           <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.textMuted }}>
-            Usar cronômetro (contar a partir do zero)
+            Usar cronômetro
           </Text>
         </Pressable>
       </BottomSheet>
