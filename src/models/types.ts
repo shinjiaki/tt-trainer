@@ -111,14 +111,18 @@ export interface Settings {
  * §3.6 General training timer. Two modes:
  *  - `stopwatch`: counts up from 0 (default / "clear").
  *  - `countdown`: counts down from `durationSeconds`; `finished` flips true at 0.
+ *
+ * Time is tracked via wall-clock timestamps so the timer stays accurate when
+ * the app is in the background. `seconds` and `running` are derived in the UI.
  */
 export interface TimerState {
   mode: 'stopwatch' | 'countdown';
-  /** Stopwatch: elapsed. Countdown: remaining. */
-  seconds: number;
   /** Selected countdown total in seconds (only meaningful in `countdown` mode). */
   durationSeconds: number;
-  running: boolean;
+  /** Elapsed seconds accumulated in completed runs (before the current run). */
+  elapsedSeconds: number;
+  /** Wall-clock ms when the current run started; null when paused/stopped. */
+  startedAt: number | null;
   /** True once a countdown has reached 0 (drives the "time's up" animation). */
   finished: boolean;
 }

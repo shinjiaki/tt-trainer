@@ -185,9 +185,10 @@ export interface AppState {
   deleteSession: (id: string) => void;
 
   // ── Timer ──────────────────────────────────────────────
-  tickTimer: () => void;
   toggleTimer: () => void;
   resetTimer: () => void;
+  /** Stop a running countdown that reached zero and mark it finished. */
+  finishTimer: () => void;
   /** Set countdown duration in seconds; 0 clears back to the count-up stopwatch. */
   setTimerDuration: (durationSeconds: number) => void;
 
@@ -208,7 +209,7 @@ export const useStore = create<AppState>()(
       tableTypes: SEED_TABLE_TYPES,
       sessions: [],
       activeSessionId: null,
-      timer: { mode: 'stopwatch', seconds: 0, durationSeconds: 0, running: false, finished: false },
+      timer: { mode: 'stopwatch', durationSeconds: 0, elapsedSeconds: 0, startedAt: null, finished: false },
       settings: DEFAULT_SETTINGS,
 
       addGym: (data) =>
@@ -530,30 +531,27 @@ export const useStore = create<AppState>()(
           activeSessionId: s.activeSessionId === id ? null : s.activeSessionId,
         })),
 
-      tickTimer: () =>
-        set((s) => {
-          const t = s.timer;
-          if (t.mode === 'countdown') {
-            const next = t.seconds - 1;
-            if (next <= 0) return { timer: { ...t, seconds: 0, running: false, finished: true } };
-            return { timer: { ...t, seconds: next } };
-          }
-          return { timer: { ...t, seconds: t.seconds + 1 } };
-        }),
       toggleTimer: () =>
         set((s) => {
           const t = s.timer;
-          // Restart a finished (or empty) countdown from its full duration on play.
-          if (!t.running && t.mode === 'countdown' && t.seconds <= 0) {
-            return { timer: { ...t, seconds: t.durationSeconds, running: true, finished: false } };
+          if (t.startedAt !== null) {
+            // Pause: snapshot elapsed time so far.
+            const elapsed = Math.floor((Date.now() - t.startedAt) / 1000);
+            return { timer: { ...t, elapsedSeconds: t.elapsedSeconds + elapsed, startedAt: null } };
           }
-          return { timer: { ...t, running: !t.running } };
+          // Restart a finished countdown from the beginning.
+          if (t.finished) {
+            return { timer: { ...t, elapsedSeconds: 0, startedAt: Date.now(), finished: false } };
+          }
+          // Start / resume.
+          return { timer: { ...t, startedAt: Date.now() } };
         }),
       resetTimer: () =>
+        set((s) => ({ timer: { ...s.timer, elapsedSeconds: 0, startedAt: null, finished: false } })),
+      finishTimer: () =>
         set((s) => {
           const t = s.timer;
-          const seconds = t.mode === 'countdown' ? t.durationSeconds : 0;
-          return { timer: { ...t, seconds, running: false, finished: false } };
+          return { timer: { ...t, elapsedSeconds: t.durationSeconds, startedAt: null, finished: true } };
         }),
       /**
        * Select a countdown duration (in seconds). Pass 0 to clear back to the
@@ -562,10 +560,10 @@ export const useStore = create<AppState>()(
       setTimerDuration: (durationSeconds) =>
         set(() => {
           if (durationSeconds <= 0) {
-            return { timer: { mode: 'stopwatch', seconds: 0, durationSeconds: 0, running: false, finished: false } };
+            return { timer: { mode: 'stopwatch', durationSeconds: 0, elapsedSeconds: 0, startedAt: null, finished: false } };
           }
           return {
-            timer: { mode: 'countdown', seconds: durationSeconds, durationSeconds, running: false, finished: false },
+            timer: { mode: 'countdown', durationSeconds, elapsedSeconds: 0, startedAt: null, finished: false },
           };
         }),
 

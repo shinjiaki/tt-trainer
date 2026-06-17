@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, AppState, AppStateStatus, Easing, Pressable, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -19,22 +19,45 @@ const SECONDS = Array.from({ length: 60 }, (_, i) => i); // 0–59
 export function TimerBar() {
   const { colors, fonts, radius } = useTheme();
   const timer = useStore((s) => s.timer);
-  const tickTimer = useStore((s) => s.tickTimer);
   const toggleTimer = useStore((s) => s.toggleTimer);
   const resetTimer = useStore((s) => s.resetTimer);
+  const finishTimer = useStore((s) => s.finishTimer);
   const setTimerDuration = useStore((s) => s.setTimerDuration);
-  const { mode, seconds, running, finished } = timer;
+  const { mode, finished } = timer;
+
+  // Derive live values from wall-clock timestamps on every render.
+  const running = timer.startedAt !== null;
+  const totalElapsed =
+    timer.elapsedSeconds +
+    (timer.startedAt ? Math.floor((Date.now() - timer.startedAt) / 1000) : 0);
+  const seconds =
+    mode === 'countdown' ? Math.max(timer.durationSeconds - totalElapsed, 0) : totalElapsed;
+
+  // Tick every 500ms while running — only purpose is to trigger re-renders.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  }, [running]);
+
+  // Re-sync immediately when the app returns to the foreground.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') setTick((n) => n + 1);
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Stop the countdown once it reaches zero.
+  useEffect(() => {
+    if (running && mode === 'countdown' && seconds <= 0) finishTimer();
+  }, [running, mode, seconds, finishTimer]);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   // Draft wheel values while the picker is open.
   const [draftMin, setDraftMin] = useState(0);
   const [draftSec, setDraftSec] = useState(0);
-
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(tickTimer, 1000);
-    return () => clearInterval(id);
-  }, [running, tickTimer]);
 
   // Seed the wheels from the current duration when the picker opens.
   const openPicker = () => {
