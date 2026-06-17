@@ -1,5 +1,15 @@
+import { Audio } from 'expo-av';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, AppState, AppStateStatus, Easing, Pressable, Text, View } from 'react-native';
+import {
+  Animated,
+  AppState,
+  AppStateStatus,
+  Easing,
+  Pressable,
+  Text,
+  Vibration,
+  View,
+} from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -23,6 +33,7 @@ export function TimerBar() {
   const resetTimer = useStore((s) => s.resetTimer);
   const finishTimer = useStore((s) => s.finishTimer);
   const setTimerDuration = useStore((s) => s.setTimerDuration);
+  const soundVibration = useStore((s) => s.settings.soundVibration);
   const { mode, finished } = timer;
 
   // Derive live values from wall-clock timestamps on every render.
@@ -67,6 +78,40 @@ export function TimerBar() {
     setPickerOpen(true);
   };
 
+  // Alarm sound — loaded once, then replayed 3× each time the countdown finishes.
+  const ALARM_REPEATS = 3;
+  const alarmSound = useRef<Audio.Sound | null>(null);
+  const playsLeft = useRef(0);
+  useEffect(() => {
+    let s: Audio.Sound;
+    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).catch(() => {});
+    Audio.Sound.createAsync(require('../../../assets/sounds/alarm.wav'))
+      .then(({ sound }) => {
+        s = sound;
+        alarmSound.current = s;
+        // Re-fire the beep until we've played it ALARM_REPEATS times.
+        s.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish && playsLeft.current > 0) {
+            playsLeft.current -= 1;
+            if (playsLeft.current > 0) s.replayAsync().catch(() => {});
+          }
+        });
+      })
+      .catch(() => {});
+    return () => {
+      s?.unloadAsync().catch(() => {});
+    };
+  }, []);
+
+  // Play the alarm (sound + vibration) when enabled in settings.
+  const fireAlarm = () => {
+    if (!soundVibration) return;
+    playsLeft.current = ALARM_REPEATS;
+    alarmSound.current?.replayAsync().catch(() => {});
+    // Vibrate in time with the 3 beeps: wait, buzz, repeat.
+    Vibration.vibrate([0, 500, 300, 500, 300, 500]);
+  };
+
   // "Time's up" pulse — flashes, then auto-settles after FLASH_MS if untouched.
   const pulse = useRef(new Animated.Value(0)).current;
   const [flashing, setFlashing] = useState(false);
@@ -76,8 +121,11 @@ export function TimerBar() {
       return;
     }
     setFlashing(true);
+    fireAlarm();
     const stop = setTimeout(() => setFlashing(false), FLASH_MS);
     return () => clearTimeout(stop);
+    // fireAlarm only needs to run on the finished → true transition.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
   useEffect(() => {

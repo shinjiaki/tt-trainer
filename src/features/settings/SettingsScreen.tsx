@@ -7,7 +7,6 @@ import {
   Screen,
   SectionLabel,
   SegmentedControl,
-  Stepper,
   TextField,
   Toggle,
 } from '@/components';
@@ -237,7 +236,7 @@ export function SettingsScreen() {
         <Group>
           <Row
             icon="bell"
-            title="Sons e vibração (Not working)"
+            title="Sons e vibração"
             right={
               <Toggle
                 on={settings.soundVibration}
