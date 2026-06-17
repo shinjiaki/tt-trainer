@@ -82,7 +82,14 @@ export function TrainingLobbyScreen() {
             <Text style={{ fontFamily: fonts.display700, fontSize: 20, color: '#fff' }}>
               Iniciar treino
             </Text>
-            <Text style={{ fontFamily: fonts.ui400, fontSize: 13.5, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+            <Text
+              style={{
+                fontFamily: fonts.ui400,
+                fontSize: 13.5,
+                color: 'rgba(255,255,255,0.85)',
+                marginTop: 2,
+              }}
+            >
               Escolha local, horário e os jogadores
             </Text>
           </View>
@@ -124,7 +131,14 @@ export function TrainingLobbyScreen() {
             }}
           >
             <Icon name="history" size={26} color={colors.textFaint} />
-            <Text style={{ fontFamily: fonts.ui400, fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
+            <Text
+              style={{
+                fontFamily: fonts.ui400,
+                fontSize: 14,
+                color: colors.textMuted,
+                textAlign: 'center',
+              }}
+            >
               Nenhum treino em {formatMonthYear(histMonth.year, histMonth.month)}.
             </Text>
           </View>
@@ -164,12 +178,27 @@ export function TrainingLobbyScreen() {
                     <Text style={{ fontFamily: fonts.ui600, fontSize: 15, color: colors.text }}>
                       {formatDateLong(s.date)}
                     </Text>
-                    <Text style={{ fontFamily: fonts.ui400, fontSize: 12.5, color: colors.textMuted, marginTop: 2 }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.ui400,
+                        fontSize: 12.5,
+                        color: colors.textMuted,
+                        marginTop: 2,
+                      }}
+                    >
                       {gymName(s.gymId)}
                     </Text>
-                    <Text style={{ fontFamily: fonts.ui500, fontSize: 12, color: colors.textFaint, marginTop: 2 }}>
-                      {s.startTime}–{s.endTime} · {formatDuration(minutesBetween(s.startTime, s.endTime))} ·{' '}
-                      {present} {present === 1 ? 'presente' : 'presentes'}
+                    <Text
+                      style={{
+                        fontFamily: fonts.ui500,
+                        fontSize: 12,
+                        color: colors.textFaint,
+                        marginTop: 2,
+                      }}
+                    >
+                      {s.startTime}–{s.endTime} ·{' '}
+                      {formatDuration(minutesBetween(s.startTime, s.endTime))} · {present}{' '}
+                      {present === 1 ? 'presente' : 'presentes'}
                       {s.noShowIds.length > 0
                         ? ` · ${s.noShowIds.length} ${s.noShowIds.length === 1 ? 'falta' : 'faltas'}`
                         : ''}

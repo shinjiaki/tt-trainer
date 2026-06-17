@@ -58,6 +58,8 @@ export interface AttendanceEntry {
   /** 'YYYY-MM-DD' */
   date: string;
   status: 'present' | 'absent';
+  sessionStartTime: string;
+  sessionEndTime: string;
 }
 
 /** A player's attendance across finished sessions where they were in the roster. */
@@ -71,6 +73,8 @@ export const playerAttendance = (
       sessionId: s.id,
       date: s.date,
       status: s.noShowIds.includes(playerId) ? ('absent' as const) : ('present' as const),
+      sessionStartTime: s.startTime,
+      sessionEndTime: s.endTime,
     }));
 
 export interface MonthAttendance {

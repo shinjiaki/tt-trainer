@@ -76,7 +76,9 @@ export function PlayerDetailScreen() {
           Jogador não encontrado
         </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.primary }}>Voltar</Text>
+          <Text style={{ fontFamily: fonts.ui600, fontSize: 14, color: colors.primary }}>
+            Voltar
+          </Text>
         </Pressable>
       </View>
     );
@@ -112,7 +114,12 @@ export function PlayerDetailScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 24, gap: 18 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: insets.bottom + 24,
+          gap: 18,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* profile */}
@@ -140,8 +147,12 @@ export function PlayerDetailScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                 {playerGyms.map((g) => (
                   <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <View style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: g.color }} />
-                    <Text style={{ fontFamily: fonts.ui600, fontSize: 11.5, color: colors.textMuted }}>
+                    <View
+                      style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: g.color }}
+                    />
+                    <Text
+                      style={{ fontFamily: fonts.ui600, fontSize: 11.5, color: colors.textMuted }}
+                    >
                       {g.name}
                     </Text>
                   </View>
@@ -211,8 +222,10 @@ export function PlayerDetailScreen() {
                   size={17}
                   color={e.status === 'present' ? colors.good : colors.danger}
                 />
-                <Text style={{ flex: 1, fontFamily: fonts.ui600, fontSize: 14, color: colors.text }}>
-                  {formatDateLong(e.date)}
+                <Text
+                  style={{ flex: 1, fontFamily: fonts.ui600, fontSize: 14, color: colors.text }}
+                >
+                  {formatDateLong(e.date)} · {e.sessionStartTime}–{e.sessionEndTime}
                 </Text>
                 <Text
                   style={{
@@ -276,7 +289,9 @@ function SummaryStat({ value, label, color }: { value: number; label: string; co
       }}
     >
       <Text style={{ fontFamily: fonts.display700, fontSize: 28, color }}>{value}</Text>
-      <Text style={{ fontFamily: fonts.ui500, fontSize: 12.5, color: colors.textMuted, marginTop: 2 }}>
+      <Text
+        style={{ fontFamily: fonts.ui500, fontSize: 12.5, color: colors.textMuted, marginTop: 2 }}
+      >
         {label} no mês
       </Text>
     </View>
@@ -297,7 +312,9 @@ function Legend({ color, label, ring }: { color: string; label: string; ring?: b
           borderColor: color,
         }}
       />
-      <Text style={{ fontFamily: fonts.ui500, fontSize: 12, color: colors.textMuted }}>{label}</Text>
+      <Text style={{ fontFamily: fonts.ui500, fontSize: 12, color: colors.textMuted }}>
+        {label}
+      </Text>
     </View>
   );
 }
